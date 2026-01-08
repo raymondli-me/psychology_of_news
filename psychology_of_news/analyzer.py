@@ -11,6 +11,13 @@ import nltk
 from pathlib import Path
 from datetime import datetime
 
+# Fix for Jupyter/Colab nested event loops
+try:
+    import nest_asyncio
+    nest_asyncio.apply()
+except ImportError:
+    pass
+
 from .config import Config
 from .scraper import fetch_articles
 from .rater import rate_sentences
