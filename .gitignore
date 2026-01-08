@@ -35,6 +35,8 @@ env/
 output/
 *.csv
 *.html
+!psychology_of_news/static/*.html
+!psychology_of_news/static/**/*.html
 *.png
 *.pdf
 
@@ -50,3 +52,5 @@ token*.json
 # Jupyter
 .ipynb_checkpoints/
 .env
+test_output/
+venv/

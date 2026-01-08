@@ -229,6 +229,27 @@ def create_interactive_umap(
         f.write(html)
 
     print(f"\n✅ Saved: {output_file}")
+
+    # Save data for Server/Director (Narrative Vis)
+    output_dir = Path(config.output_dir)
+
+    # Points data with coordinates for 3D visualization
+    points_file = output_dir / "points_data.json"
+    with open(points_file, 'w') as f:
+        json.dump(points_data, f)
+
+    # Cluster statistics (centroids, counts, means)
+    stats_file = output_dir / "cluster_stats.json"
+    with open(stats_file, 'w') as f:
+        json.dump(cluster_stats, f, indent=2)
+
+    # Topic names from each model
+    names_file = output_dir / "topic_names.json"
+    with open(names_file, 'w') as f:
+        json.dump(topic_names, f, indent=2)
+
+    print(f"✅ Saved data for Director Server: points_data.json, cluster_stats.json, topic_names.json")
+
     return str(output_file)
 
 

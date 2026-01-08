@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Narrative Vis: Draymond Green Trade</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div id="container"></div>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+        <div id="title">Psychology of News: Narrative Vis</div>
+
+        <!-- Narrator Box -->
+        <div id="narrator-box">
+            <div id="chat-history">
+                <div class="message ai">
+                    Hello! I'm your Data Director. I can see the entire dataset of 200 rated sentences about the
+                    Draymond Green trade rumors. Ask me anything, and I'll show you the data.
+                </div>
+            </div>
+            <div id="input-area">
+                <select id="chat-model">
+                    <option value="gemini">Gemini 2.5</option>
+                    <option value="claude">Claude 4.5</option>
+                    <option value="gpt">GPT-5</option>
+                </select>
+                <input type="text" id="user-input"
+                    placeholder="e.g. 'Show me the most negative rumors' or 'What about Steve Kerr?'">
+                <button id="send-btn">Ask</button>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div id="controls">
+            <div class="control-group">
+                <label>Color By</label>
+                <div class="btn-group" id="model-selector">
+                    <button class="active" data-model="gpt">GPT-5</button>
+                    <button data-model="claude">Claude</button>
+                    <button data-model="gemini">Gemini</button>
+                </div>
+            </div>
+            <button id="reset-btn">Reset View</button>
+        </div>
+
+        <!-- Tooltip -->
+        <div id="tooltip"></div>
+    </div>
+
+    <script type="module" src="/static/js/stage.js"></script>
+</body>
+
+</html>
