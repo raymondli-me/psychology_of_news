@@ -1,8 +1,10 @@
 # =============================================================================
-# CELL 1: Install (run this cell first)
+# CELL 1: Install (run this cell first, then RESTART RUNTIME)
 # =============================================================================
-!pip install -q git+https://github.com/raymondli-me/psychology_of_news.git
+!pip install --force-reinstall --no-cache-dir -q git+https://github.com/raymondli-me/psychology_of_news.git
 !pip install -q litellm eventregistry sentence-transformers umap-learn hdbscan nest-asyncio
+
+# After running this cell, go to Runtime -> Restart runtime, then run cells 2-4
 
 # =============================================================================
 # CELL 2: Load API Keys from Colab Secrets
