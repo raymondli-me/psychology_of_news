@@ -16,12 +16,23 @@ from datetime import datetime
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 warnings.filterwarnings("ignore", category=UserWarning, module="litellm")
 
-# Fix for Jupyter/Colab nested event loops
-try:
-    import nest_asyncio
-    nest_asyncio.apply()
-except ImportError:
-    pass
+# Detect if we're in Jupyter/Colab
+def _in_notebook():
+    try:
+        from IPython import get_ipython
+        if get_ipython() is not None:
+            return True
+    except ImportError:
+        pass
+    return False
+
+# Only apply nest_asyncio in notebooks where event loop is already running
+if _in_notebook():
+    try:
+        import nest_asyncio
+        nest_asyncio.apply()
+    except ImportError:
+        pass
 
 from .config import Config
 from .scraper import fetch_articles

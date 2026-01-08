@@ -35,7 +35,7 @@ async def rate_sentence_single(
                 response = await acompletion(
                     model=model_id,
                     messages=[{"role": "user", "content": prompt}],
-                    timeout=30,
+                    timeout=120,
                     max_tokens=max_tokens
                 )
                 content = response.choices[0].message.content

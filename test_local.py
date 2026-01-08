@@ -53,7 +53,7 @@ config = Config(
     output_dir=OUTPUT_DIR,
 
     # Sentence filtering
-    max_sentences=50,  # Start small for testing
+    max_sentences=20,  # Small test run
     keyword_filter=None,  # Auto: "Draymond Green"
     keyword_logic="any",
 
@@ -62,6 +62,10 @@ config = Config(
     scale_low="No trade implication",
     scale_mid="Neutral/ambiguous",
     scale_high="Trade very likely",
+
+    # Concurrency settings
+    max_concurrent_per_model=5,
+    batch_size=10,
 )
 
 
