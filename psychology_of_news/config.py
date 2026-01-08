@@ -77,11 +77,11 @@ Reply with ONLY a single number (1-10), nothing else."""
     # Output directory for all results
     output_dir: str = "./output"
 
-    # Models - default triple-LLM setup
+    # Models - default triple-LLM setup (latest, cost-effective models)
     models: list = field(default_factory=lambda: [
-        ModelConfig(name="GPT", model_id="openai/gpt-4o-mini"),
+        ModelConfig(name="GPT", model_id="openai/gpt-5-nano"),
         ModelConfig(name="Claude", model_id="anthropic/claude-sonnet-4-5"),
-        ModelConfig(name="Gemini", model_id="gemini/gemini-2.0-flash"),
+        ModelConfig(name="Gemini", model_id="gemini/gemini-2.0-flash"),  # 2.5 has async litellm bug
     ])
 
     # Sentence extraction
