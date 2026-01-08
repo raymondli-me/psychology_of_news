@@ -268,6 +268,10 @@ def _generate_html_template(
         .model-btn.active {{ border-color: #ffd700; background: rgba(255, 215, 0, 0.2); }}
         #tooltip {{ position: absolute; background: rgba(15, 15, 30, 0.98); color: white; padding: 16px; border-radius: 10px; pointer-events: none; display: none; max-width: 480px; font-size: 12px; z-index: 1000; border: 1px solid rgba(255, 215, 0, 0.3); }}
         #stats-panel {{ position: absolute; bottom: 20px; right: 20px; background: rgba(15, 15, 25, 0.9); padding: 12px; border-radius: 8px; color: white; font-size: 11px; z-index: 100; }}
+        #rating-panel {{ position: absolute; bottom: 20px; left: 20px; background: rgba(15, 15, 25, 0.95); padding: 14px 18px; border-radius: 10px; color: white; font-size: 11px; z-index: 100; max-width: 280px; border: 1px solid rgba(255, 215, 0, 0.2); }}
+        #rating-panel .title {{ font-size: 11px; font-weight: 600; color: #ffd700; margin-bottom: 8px; text-transform: uppercase; }}
+        #rating-panel .question {{ font-size: 13px; margin-bottom: 10px; line-height: 1.4; }}
+        #rating-panel .scale {{ font-family: monospace; font-size: 10px; background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 4px; border-left: 2px solid #ffd700; }}
         {color_css}
     </style>
 </head>
@@ -286,6 +290,15 @@ def _generate_html_template(
     </div>
     <div id="tooltip"></div>
     <div id="stats-panel"><strong>n={len(points_data)}</strong> | Hover to inspect | <strong style="color: #ffd700;">Click to open article</strong></div>
+    <div id="rating-panel">
+        <div class="title">Rating Task</div>
+        <div class="question">{config.rating_display["question"]}</div>
+        <div class="scale">
+            {config.rating_display["scale"]["low"]}<br>
+            {config.rating_display["scale"]["mid"]}<br>
+            {config.rating_display["scale"]["high"]}
+        </div>
+    </div>
 
     <script type="importmap">
     {{ "imports": {{ "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/" }} }}

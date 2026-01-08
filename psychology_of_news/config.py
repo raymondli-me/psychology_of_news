@@ -32,6 +32,12 @@ class Config:
     # What we're analyzing
     topic: str = "Draymond Green trade"
 
+    # Human-readable description of what's being rated (shown in visualization)
+    rating_question: str = "How strongly does this imply {topic} will happen?"
+    scale_low: str = "No implication"
+    scale_mid: str = "Neutral"
+    scale_high: str = "Strongly implies"
+
     # The rating prompt - {topic} and {text} are replaced
     prompt_template: str = """Rate this sentence on how strongly it implies {topic} will happen.
 
@@ -43,6 +49,18 @@ Score from 1-10:
 10 = Strongly implies it will happen
 
 Reply with ONLY a single number (1-10), nothing else."""
+
+    @property
+    def rating_display(self) -> dict:
+        """Get rating info for display in visualization."""
+        return {
+            "question": self.rating_question.format(topic=self.topic),
+            "scale": {
+                "low": f"1 = {self.scale_low}",
+                "mid": f"5 = {self.scale_mid}",
+                "high": f"10 = {self.scale_high}"
+            }
+        }
 
     # Input: CSV with columns [title, body_text, source, date, url]
     input_csv: Optional[str] = None
@@ -104,6 +122,10 @@ def trade_analysis(player: str) -> Config:
     """Preset for player trade analysis."""
     return Config(
         topic=f"{player} trade",
+        rating_question=f"How likely does this imply {player} will be traded?",
+        scale_low="No trade implication",
+        scale_mid="Neutral/ambiguous",
+        scale_high="Trade very likely",
         prompt_template=f"""Rate this sentence on how strongly it implies {player} will be traded.
 
 Sentence: "{{text}}"
@@ -121,6 +143,10 @@ def sentiment_analysis(subject: str) -> Config:
     """Preset for sentiment analysis."""
     return Config(
         topic=f"{subject} sentiment",
+        rating_question=f"What is the sentiment about {subject}?",
+        scale_low="Very negative",
+        scale_mid="Neutral",
+        scale_high="Very positive",
         prompt_template=f"""Rate the sentiment about {subject} in this sentence.
 
 Sentence: "{{text}}"
@@ -129,6 +155,27 @@ Score from 1-10:
 1 = Very negative
 5 = Neutral
 10 = Very positive
+
+Reply with ONLY a single number (1-10), nothing else."""
+    )
+
+
+def impact_analysis(topic: str) -> Config:
+    """Preset for news impact/significance analysis."""
+    return Config(
+        topic=topic,
+        rating_question=f"How significant/impactful is this news about {topic}?",
+        scale_low="Minor/routine",
+        scale_mid="Moderate",
+        scale_high="Major breaking news",
+        prompt_template=f"""Rate how significant or impactful this news is regarding {topic}.
+
+Sentence: "{{text}}"
+
+Score from 1-10:
+1 = Minor/routine news
+5 = Moderately significant
+10 = Major breaking news
 
 Reply with ONLY a single number (1-10), nothing else."""
     )
