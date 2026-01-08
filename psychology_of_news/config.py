@@ -79,8 +79,11 @@ Reply with ONLY a single number (1-10), nothing else."""
     min_sentence_length: int = 30
     max_sentence_length: int = 500
     max_sentences: int = 200
-    require_topic_mention: bool = True  # Only sentences mentioning keyword
-    keyword_filter: str = None  # Custom keyword to filter by (default: auto from topic)
+
+    # Keyword filtering - sentences must contain this word
+    # If None, auto-extracts from topic (first 1-2 words, e.g., "Draymond Green")
+    # Set explicitly for better control, e.g., keyword_filter="Draymond"
+    keyword_filter: str = None
 
     # Rating settings
     max_concurrent_per_model: int = 5
@@ -114,11 +117,28 @@ Reply with ONLY a single number (1-10), nothing else."""
 
     @property
     def topic_keyword(self) -> str:
-        """Get keyword for sentence filtering."""
+        """
+        Get keyword for sentence filtering.
+
+        If keyword_filter is set, use that.
+        Otherwise auto-extract from topic:
+        - "Draymond Green trade" -> "Draymond Green" (looks like a name)
+        - "Tesla stock" -> "Tesla"
+        - "Fed rate hike" -> "Fed"
+        """
         if self.keyword_filter:
             return self.keyword_filter
-        # Auto-extract: "Draymond Green trade" -> "Draymond"
-        return self.topic.split()[0]
+
+        words = self.topic.split()
+        if len(words) >= 2:
+            # If first two words are capitalized, assume it's a name
+            if words[0][0].isupper() and words[1][0].isupper():
+                # But skip if second word is a common noun like "Trade", "Stock", etc.
+                common_nouns = {"trade", "stock", "price", "news", "update", "deal", "contract"}
+                if words[1].lower() not in common_nouns:
+                    return f"{words[0]} {words[1]}"
+
+        return words[0] if words else self.topic
 
 
 # Preset configs for common use cases

@@ -21,18 +21,22 @@ os.environ["GOOGLE_API_KEY"] = userdata.get("GOOGLE_API_KEY")
 from psychology_of_news import Analyzer, Config
 
 config = Config(
-    # What to analyze
+    # What to search for (Event Registry query)
     topic="Draymond Green trade",
     output_dir="/content/output",
 
-    # Sentence filtering criteria
-    max_sentences=100,           # Max sentences to rate (default: 200)
-    min_sentence_length=30,      # Min characters (default: 30)
-    max_sentence_length=500,     # Max characters (default: 500)
-    require_topic_mention=True,  # Must contain keyword (default: True)
-    keyword_filter=None,         # Custom keyword, or None for auto ("Draymond")
+    # Sentence filtering
+    max_sentences=100,         # How many sentences to rate
+    min_sentence_length=30,    # Skip short sentences
+    max_sentence_length=500,   # Skip very long sentences
 
-    # Rating task shown in visualization
+    # Keyword filter: sentences must contain this word/phrase
+    # If None, auto-extracts from topic:
+    #   "Draymond Green trade" -> "Draymond Green"
+    #   "Tesla stock" -> "Tesla"
+    keyword_filter=None,  # Or set explicitly: "Draymond", "trade", etc.
+
+    # Rating task (shown in visualization)
     rating_question="How likely does this imply Draymond Green will be traded?",
     scale_low="No trade implication",
     scale_mid="Neutral/ambiguous",
