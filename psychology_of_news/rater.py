@@ -26,18 +26,25 @@ async def rate_sentence_single(
         retries = 3
         backoff = 2
 
-        # GPT-5-mini needs more tokens for reasoning
+        # GPT-5 models need more tokens for reasoning
         if "gpt-5" in model_id.lower():
             max_tokens = 1000
 
+        # Build kwargs
+        kwargs = {
+            "model": model_id,
+            "messages": [{"role": "user", "content": prompt}],
+            "timeout": 120,
+            "max_tokens": max_tokens
+        }
+
+        # Gemini 2.5+ models: disable thinking for faster/cheaper responses
+        if "gemini-2.5" in model_id.lower() or "gemini-3" in model_id.lower():
+            kwargs["reasoning_effort"] = "none"
+
         for attempt in range(retries):
             try:
-                response = await acompletion(
-                    model=model_id,
-                    messages=[{"role": "user", "content": prompt}],
-                    timeout=120,
-                    max_tokens=max_tokens
-                )
+                response = await acompletion(**kwargs)
                 content = response.choices[0].message.content
                 if content:
                     content = content.strip()

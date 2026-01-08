@@ -46,12 +46,18 @@ Return ONLY the label, nothing else."""
     try:
         max_tok = 1000 if "gpt-5" in model_id else 100
 
-        response = await acompletion(
-            model=model_id,
-            messages=[{"role": "user", "content": prompt}],
-            timeout=90,
-            max_tokens=max_tok
-        )
+        kwargs = {
+            "model": model_id,
+            "messages": [{"role": "user", "content": prompt}],
+            "timeout": 90,
+            "max_tokens": max_tok
+        }
+
+        # Gemini 2.5+ models: disable thinking for faster/cheaper responses
+        if "gemini-2.5" in model_id.lower() or "gemini-3" in model_id.lower():
+            kwargs["reasoning_effort"] = "none"
+
+        response = await acompletion(**kwargs)
         content = response.choices[0].message.content
         if content:
             return content.strip().strip('"').strip("'")[:30]
