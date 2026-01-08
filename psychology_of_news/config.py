@@ -77,8 +77,10 @@ Reply with ONLY a single number (1-10), nothing else."""
 
     # Sentence extraction
     min_sentence_length: int = 30
+    max_sentence_length: int = 500
     max_sentences: int = 200
-    require_topic_mention: bool = True  # Only sentences mentioning topic keyword
+    require_topic_mention: bool = True  # Only sentences mentioning keyword
+    keyword_filter: str = None  # Custom keyword to filter by (default: auto from topic)
 
     # Rating settings
     max_concurrent_per_model: int = 5
@@ -112,8 +114,10 @@ Reply with ONLY a single number (1-10), nothing else."""
 
     @property
     def topic_keyword(self) -> str:
-        """Extract main keyword from topic for sentence filtering."""
-        # "Draymond Green trade" -> "Draymond"
+        """Get keyword for sentence filtering."""
+        if self.keyword_filter:
+            return self.keyword_filter
+        # Auto-extract: "Draymond Green trade" -> "Draymond"
         return self.topic.split()[0]
 
 

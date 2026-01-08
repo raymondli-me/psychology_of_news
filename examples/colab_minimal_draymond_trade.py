@@ -25,8 +25,12 @@ config = Config(
     topic="Draymond Green trade",
     output_dir="/content/output",
 
-    # How many sentences to rate (more = longer runtime + more API cost)
-    max_sentences=100,  # Default is 200, reduce for faster/cheaper runs
+    # Sentence filtering criteria
+    max_sentences=100,           # Max sentences to rate (default: 200)
+    min_sentence_length=30,      # Min characters (default: 30)
+    max_sentence_length=500,     # Max characters (default: 500)
+    require_topic_mention=True,  # Must contain keyword (default: True)
+    keyword_filter=None,         # Custom keyword, or None for auto ("Draymond")
 
     # Rating task shown in visualization
     rating_question="How likely does this imply Draymond Green will be traded?",

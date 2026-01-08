@@ -120,6 +120,8 @@ class Analyzer:
                 s = s.strip()
                 if len(s) < self.config.min_sentence_length:
                     continue
+                if len(s) > self.config.max_sentence_length:
+                    continue
                 if self.config.require_topic_mention and keyword not in s:
                     continue
 
