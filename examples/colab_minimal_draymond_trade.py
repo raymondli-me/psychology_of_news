@@ -5,13 +5,15 @@
 !pip install -q litellm eventregistry sentence-transformers umap-learn hdbscan
 
 # =============================================================================
-# CELL 2: API Keys (fill in your keys)
+# CELL 2: Load API Keys from Colab Secrets
 # =============================================================================
 import os
-os.environ["EVENT_REGISTRY_API_KEY"] = "YOUR_KEY"  # Get from eventregistry.org
-os.environ["OPENAI_API_KEY"] = "sk-proj-..."
-os.environ["ANTHROPIC_API_KEY"] = "sk-ant-api03-..."
-os.environ["GOOGLE_API_KEY"] = "AIzaSy..."
+from google.colab import userdata
+
+os.environ["EVENT_REGISTRY_API_KEY"] = userdata.get("EVENT_REGISTRY_NEWS")
+os.environ["OPENAI_API_KEY"] = userdata.get("OPENAI_API_KEY")
+os.environ["ANTHROPIC_API_KEY"] = userdata.get("CLAUDE_API_KEY")
+os.environ["GOOGLE_API_KEY"] = userdata.get("GOOGLE_API_KEY")
 
 # =============================================================================
 # CELL 3: Run Analysis
