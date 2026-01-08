@@ -318,6 +318,10 @@ def _generate_html_template(
             <div><span>5</span><span>{config.scale_mid}</span></div>
             <div><span>10</span><span>{config.scale_high}</span></div>
         </div>
+        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 9px; opacity: 0.7; line-height: 1.4;">
+            <div><strong>Points:</strong> raw score</div>
+            <div><strong>Labels:</strong> percentile rank</div>
+        </div>
     </div>
     <div id="rating-panel">
         <div class="title">Rating Task</div>
@@ -403,10 +407,27 @@ def _generate_html_template(
             labelSprites.forEach(s => scene.remove(s));
             labelSprites.length = 0;
 
+            // Collect all cluster scores for percentile calculation
+            const clusterScores = [];
+            for (const [clusterId, stats] of Object.entries(clusterStats)) {{
+                if (parseInt(clusterId) === -1 || stats.count < 3) continue;
+                const score = stats[currentModel + '_mean'] || 5;
+                clusterScores.push({{ clusterId, score }});
+            }}
+
+            // Sort by score to calculate percentiles
+            clusterScores.sort((a, b) => a.score - b.score);
+            const percentileMap = {{}};
+            clusterScores.forEach((item, idx) => {{
+                // Map to 1-10 scale based on percentile rank
+                percentileMap[item.clusterId] = 1 + (idx / Math.max(1, clusterScores.length - 1)) * 9;
+            }});
+
             for (const [clusterId, stats] of Object.entries(clusterStats)) {{
                 if (parseInt(clusterId) === -1 || stats.count < 3) continue;
                 const name = topicNames[currentModel]?.[clusterId] || `Cluster ${{clusterId}}`;
-                const score = stats[currentModel + '_mean'] || 5;
+                // Use percentile-based score instead of raw score
+                const percentileScore = percentileMap[clusterId] || 5;
 
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -419,7 +440,7 @@ def _generate_html_template(
                 ctx.roundRect(0, 0, canvas.width, canvas.height, 8);
                 ctx.fill();
 
-                const color = getColorForScore(score, currentModel);
+                const color = getColorForScore(percentileScore, currentModel);
                 ctx.strokeStyle = `rgb(${{Math.floor(color.r*255)}}, ${{Math.floor(color.g*255)}}, ${{Math.floor(color.b*255)}})`;
                 ctx.lineWidth = 4;
                 ctx.roundRect(0, 0, canvas.width, canvas.height, 8);

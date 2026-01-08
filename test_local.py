@@ -8,6 +8,7 @@ Usage:
     python test_local.py rate     # Rate sentences (uses LLM APIs)
     python test_local.py viz      # Create visualization only
     python test_local.py all      # Run everything
+    python test_local.py test200  # Rate 200 existing sentences (timestamped output)
 
 Setup:
     Create a .env file with your API keys:
@@ -138,6 +139,79 @@ def run_all():
     print("=" * 60)
 
 
+def test_200():
+    """Test with 200 sentences from previous run (re-rates them)."""
+    import pandas as pd
+    import asyncio
+    from datetime import datetime
+    from psychology_of_news.rater import rate_sentences as rate_all
+
+    OLD_CSV = "/Users/raymondli701/2026_01_07_workspace/attempts/20260107_235604_draymond_triple_llm/sentence_ratings.csv"
+
+    # Timestamp for this run
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_dir = f"{OUTPUT_DIR}/run_{timestamp}"
+    os.makedirs(run_dir, exist_ok=True)
+
+    print("=" * 60)
+    print("TEST 200: Rating 200 sentences with current models")
+    print(f"Run ID: {timestamp}")
+    print(f"Output: {run_dir}")
+    print("=" * 60)
+
+    if not os.path.exists(OLD_CSV):
+        print(f"ERROR: Old CSV not found at {OLD_CSV}")
+        return
+
+    # Load old sentences (ignore old scores)
+    df = pd.read_csv(OLD_CSV)
+    print(f"Loaded {len(df)} sentences")
+
+    # Show models being used
+    print("\nModels:")
+    for m in config.models:
+        print(f"  {m.name}: {m.model_id}")
+
+    # Extract just the sentence data
+    sentences = [
+        {"text": row["text"], "source": row["source"], "article_title": row["article_title"]}
+        for _, row in df.iterrows()
+    ]
+
+    print(f"\nRating {len(sentences)} sentences...")
+
+    # Rate them
+    rated = asyncio.run(rate_all(sentences, config))
+
+    # Save results with timestamp
+    result_df = pd.DataFrame(rated)
+    result_path = f"{run_dir}/sentence_ratings.csv"
+    result_df.to_csv(result_path, index=False)
+    print(f"\nSaved to {result_path}")
+
+    # Show score distribution
+    print("\nScore distribution:")
+    for m in config.models:
+        col = f"{m.name}_score"
+        if col in result_df.columns:
+            print(f"  {m.name}: mean={result_df[col].mean():.2f}, min={result_df[col].min()}, max={result_df[col].max()}")
+
+    # Create visualization in the same timestamped directory
+    print("\nCreating visualization...")
+    from psychology_of_news.visualizer import create_interactive_umap
+
+    # Temporarily update config output_dir for this run
+    original_output_dir = config.output_dir
+    config.output_dir = run_dir
+    viz_path = create_interactive_umap(result_df, config)
+    config.output_dir = original_output_dir
+
+    print(f"Visualization: {viz_path}")
+    print(f"\nAll outputs in: {run_dir}")
+
+    return result_df
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
@@ -161,6 +235,8 @@ def main():
         create_visualization()
     elif cmd == "all":
         run_all()
+    elif cmd == "test200":
+        test_200()
     else:
         print(f"Unknown command: {cmd}")
         print(__doc__)
