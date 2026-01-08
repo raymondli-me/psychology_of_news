@@ -80,10 +80,13 @@ Reply with ONLY a single number (1-10), nothing else."""
     max_sentence_length: int = 500
     max_sentences: int = 200
 
-    # Keyword filtering - sentences must contain this word
-    # If None, auto-extracts from topic (first 1-2 words, e.g., "Draymond Green")
-    # Set explicitly for better control, e.g., keyword_filter="Draymond"
-    keyword_filter: str = None
+    # Keyword filtering - sentences must contain these words
+    # Can be: str, list of str, or None (auto-extracts from topic)
+    # Examples:
+    #   keyword_filter="Draymond"
+    #   keyword_filter=["Draymond", "trade"]
+    keyword_filter: str | list = None
+    keyword_logic: str = "any"  # "any" (OR) or "all" (AND)
 
     # Rating settings
     max_concurrent_per_model: int = 5
@@ -116,29 +119,36 @@ Reply with ONLY a single number (1-10), nothing else."""
         return self.prompt_template.format(topic=self.topic, text=text)
 
     @property
-    def topic_keyword(self) -> str:
+    def topic_keywords(self) -> list:
         """
-        Get keyword for sentence filtering.
+        Get keywords for sentence filtering (always returns a list).
 
-        If keyword_filter is set, use that.
+        If keyword_filter is set, use that (str or list).
         Otherwise auto-extract from topic:
-        - "Draymond Green trade" -> "Draymond Green" (looks like a name)
-        - "Tesla stock" -> "Tesla"
-        - "Fed rate hike" -> "Fed"
+        - "Draymond Green trade" -> ["Draymond Green"]
+        - "Tesla stock" -> ["Tesla"]
         """
         if self.keyword_filter:
-            return self.keyword_filter
+            if isinstance(self.keyword_filter, list):
+                return self.keyword_filter
+            return [self.keyword_filter]
 
         words = self.topic.split()
         if len(words) >= 2:
-            # If first two words are capitalized, assume it's a name
             if words[0][0].isupper() and words[1][0].isupper():
-                # But skip if second word is a common noun like "Trade", "Stock", etc.
                 common_nouns = {"trade", "stock", "price", "news", "update", "deal", "contract"}
                 if words[1].lower() not in common_nouns:
-                    return f"{words[0]} {words[1]}"
+                    return [f"{words[0]} {words[1]}"]
 
-        return words[0] if words else self.topic
+        return [words[0]] if words else [self.topic]
+
+    def matches_keywords(self, text: str) -> bool:
+        """Check if text matches keyword filter based on logic (any/all)."""
+        keywords = self.topic_keywords
+        if self.keyword_logic == "all":
+            return all(kw in text for kw in keywords)
+        else:  # "any"
+            return any(kw in text for kw in keywords)
 
 
 # Preset configs for common use cases

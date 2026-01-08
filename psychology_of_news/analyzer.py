@@ -103,7 +103,8 @@ class Analyzer:
         if self.articles_df is None:
             raise ValueError("No articles loaded. Call fetch() or load_articles() first.")
 
-        keyword = self.config.topic_keyword
+        keywords = self.config.topic_keywords
+        logic = self.config.keyword_logic
         self.sentences = []
 
         for _, row in self.articles_df.iterrows():
@@ -122,7 +123,7 @@ class Analyzer:
                     continue
                 if len(s) > self.config.max_sentence_length:
                     continue
-                if self.config.require_topic_mention and keyword not in s:
+                if not self.config.matches_keywords(s):
                     continue
 
                 self.sentences.append({
@@ -137,7 +138,8 @@ class Analyzer:
             if len(self.sentences) >= self.config.max_sentences:
                 break
 
-        print(f"Extracted {len(self.sentences)} sentences containing '{keyword}'")
+        kw_str = f" {logic.upper()} ".join(keywords)
+        print(f"Extracted {len(self.sentences)} sentences matching: {kw_str}")
         return self.sentences
 
     def rate(self) -> pd.DataFrame:

@@ -26,15 +26,20 @@ config = Config(
     output_dir="/content/output",
 
     # Sentence filtering
-    max_sentences=100,         # How many sentences to rate
-    min_sentence_length=30,    # Skip short sentences
-    max_sentence_length=500,   # Skip very long sentences
+    max_sentences=100,
+    min_sentence_length=30,
+    max_sentence_length=500,
 
-    # Keyword filter: sentences must contain this word/phrase
-    # If None, auto-extracts from topic:
-    #   "Draymond Green trade" -> "Draymond Green"
-    #   "Tesla stock" -> "Tesla"
-    keyword_filter=None,  # Or set explicitly: "Draymond", "trade", etc.
+    # Keyword filter: which sentences to include
+    # - None: auto-extract from topic ("Draymond Green")
+    # - str: single keyword ("Draymond")
+    # - list: multiple keywords (["Draymond", "trade", "Warriors"])
+    keyword_filter=None,
+    keyword_logic="any",  # "any" (OR) or "all" (AND)
+
+    # Examples:
+    # keyword_filter=["Draymond", "trade"], keyword_logic="any"   -> has Draymond OR trade
+    # keyword_filter=["Draymond", "trade"], keyword_logic="all"   -> has Draymond AND trade
 
     # Rating task (shown in visualization)
     rating_question="How likely does this imply Draymond Green will be traded?",
