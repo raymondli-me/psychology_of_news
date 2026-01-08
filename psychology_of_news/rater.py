@@ -26,7 +26,7 @@ async def rate_sentence_single(
         retries = 3
         backoff = 2
 
-        # GPT-5 models need more tokens for reasoning
+        # GPT-5 models need more tokens for internal reasoning
         if "gpt-5" in model_id.lower():
             max_tokens = 1000
 
