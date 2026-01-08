@@ -11,9 +11,18 @@ import os
 @dataclass
 class ModelConfig:
     """Config for a single LLM."""
-    name: str
-    model_id: str
+    name: str  # Short display name: "GPT", "Claude", "Gemini"
+    model_id: str  # Full litellm model ID: "openai/gpt-4o-mini"
     max_tokens: int = 10  # GPT-5-mini needs more, handled in rater
+
+    @property
+    def short_model_id(self) -> str:
+        """Get just the model name without provider prefix."""
+        # "openai/gpt-4o-mini" -> "gpt-4o-mini"
+        # "anthropic/claude-sonnet-4-5" -> "claude-sonnet-4-5"
+        if "/" in self.model_id:
+            return self.model_id.split("/", 1)[1]
+        return self.model_id
 
 
 @dataclass

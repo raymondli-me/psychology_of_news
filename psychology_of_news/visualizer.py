@@ -242,6 +242,7 @@ def _generate_html_template(
         model_buttons += f'''
         <button class="model-btn" data-model="{m.name.lower()}">
             <span class="{m.name.lower()}-color">{m.name}</span>
+            <span class="model-id">{m.short_model_id}</span>
         </button>'''
 
     # Color CSS for models
@@ -262,16 +263,24 @@ def _generate_html_template(
     <style>
         body {{ margin: 0; overflow: hidden; background-color: #0a0a0a; font-family: 'Segoe UI', sans-serif; }}
         #title {{ position: absolute; top: 20px; left: 20px; color: #fff; font-size: 20px; font-weight: 600; z-index: 100; }}
-        #controls {{ position: absolute; top: 60px; left: 20px; background: rgba(15, 15, 25, 0.95); padding: 18px; border-radius: 12px; color: white; z-index: 100; min-width: 180px; }}
-        .model-btn {{ display: block; width: 100%; padding: 10px; margin: 6px 0; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.05); color: white; cursor: pointer; text-align: left; }}
+        #controls {{ position: absolute; top: 60px; left: 20px; background: rgba(15, 15, 25, 0.95); padding: 18px; border-radius: 12px; color: white; z-index: 100; min-width: 200px; }}
+        .model-btn {{ display: block; width: 100%; padding: 10px 12px; margin: 6px 0; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.05); color: white; cursor: pointer; text-align: left; }}
         .model-btn:hover {{ background: rgba(255,255,255,0.15); }}
         .model-btn.active {{ border-color: #ffd700; background: rgba(255, 215, 0, 0.2); }}
+        .model-btn span:first-child {{ display: block; font-weight: 600; font-size: 14px; }}
+        .model-id {{ display: block; font-size: 10px; opacity: 0.6; margin-top: 2px; font-family: monospace; }}
         #tooltip {{ position: absolute; background: rgba(15, 15, 30, 0.98); color: white; padding: 16px; border-radius: 10px; pointer-events: none; display: none; max-width: 480px; font-size: 12px; z-index: 1000; border: 1px solid rgba(255, 215, 0, 0.3); }}
         #stats-panel {{ position: absolute; bottom: 20px; right: 20px; background: rgba(15, 15, 25, 0.9); padding: 12px; border-radius: 8px; color: white; font-size: 11px; z-index: 100; }}
         #rating-panel {{ position: absolute; bottom: 20px; left: 20px; background: rgba(15, 15, 25, 0.95); padding: 14px 18px; border-radius: 10px; color: white; font-size: 11px; z-index: 100; max-width: 280px; border: 1px solid rgba(255, 215, 0, 0.2); }}
         #rating-panel .title {{ font-size: 11px; font-weight: 600; color: #ffd700; margin-bottom: 8px; text-transform: uppercase; }}
         #rating-panel .question {{ font-size: 13px; margin-bottom: 10px; line-height: 1.4; }}
         #rating-panel .scale {{ font-family: monospace; font-size: 10px; background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 4px; border-left: 2px solid #ffd700; }}
+        #color-legend {{ position: absolute; top: 60px; right: 20px; background: rgba(15, 15, 25, 0.95); padding: 14px 16px; border-radius: 10px; color: white; z-index: 100; min-width: 160px; border: 1px solid rgba(255, 215, 0, 0.2); }}
+        #color-legend .legend-title {{ font-size: 11px; font-weight: 600; color: #ffd700; margin-bottom: 10px; text-transform: uppercase; }}
+        #color-legend .gradient-bar {{ height: 16px; border-radius: 4px; background: linear-gradient(to right, rgb(59, 130, 246), rgb(234, 179, 8), rgb(239, 68, 68)); margin-bottom: 6px; }}
+        #color-legend .gradient-labels {{ display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 10px; }}
+        #color-legend .scale-labels {{ font-size: 9px; opacity: 0.8; line-height: 1.5; }}
+        #color-legend .scale-labels div {{ display: flex; justify-content: space-between; gap: 10px; }}
         {color_css}
     </style>
 </head>
@@ -290,6 +299,20 @@ def _generate_html_template(
     </div>
     <div id="tooltip"></div>
     <div id="stats-panel"><strong>n={len(points_data)}</strong> | Hover to inspect | <strong style="color: #ffd700;">Click to open article</strong></div>
+    <div id="color-legend">
+        <div class="legend-title">Score Legend</div>
+        <div class="gradient-bar"></div>
+        <div class="gradient-labels">
+            <span>1</span>
+            <span>5</span>
+            <span>10</span>
+        </div>
+        <div class="scale-labels">
+            <div><span>1</span><span>{config.scale_low}</span></div>
+            <div><span>5</span><span>{config.scale_mid}</span></div>
+            <div><span>10</span><span>{config.scale_high}</span></div>
+        </div>
+    </div>
     <div id="rating-panel">
         <div class="title">Rating Task</div>
         <div class="question">{config.rating_display["question"]}</div>
