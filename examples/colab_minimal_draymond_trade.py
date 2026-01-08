@@ -1,10 +1,12 @@
 # =============================================================================
-# CELL 1: Install (run this cell first, then RESTART RUNTIME)
+# CELL 1: Install (run once, then restart runtime)
 # =============================================================================
-!pip install --force-reinstall --no-cache-dir -q git+https://github.com/raymondli-me/psychology_of_news.git
-!pip install -q litellm eventregistry sentence-transformers umap-learn hdbscan nest-asyncio
+# Run this cell, then: Runtime -> Restart runtime
+# After restart, skip this cell and run cells 2-4
 
-# After running this cell, go to Runtime -> Restart runtime, then run cells 2-4
+!pip uninstall -y psychology-of-news 2>/dev/null
+!pip install -q git+https://github.com/raymondli-me/psychology_of_news.git
+!pip install -q nest-asyncio
 
 # =============================================================================
 # CELL 2: Load API Keys from Colab Secrets
@@ -38,10 +40,6 @@ config = Config(
     # - list: multiple keywords (["Draymond", "trade", "Warriors"])
     keyword_filter=None,
     keyword_logic="any",  # "any" (OR) or "all" (AND)
-
-    # Examples:
-    # keyword_filter=["Draymond", "trade"], keyword_logic="any"   -> has Draymond OR trade
-    # keyword_filter=["Draymond", "trade"], keyword_logic="all"   -> has Draymond AND trade
 
     # Rating task (shown in visualization)
     rating_question="How likely does this imply Draymond Green will be traded?",
