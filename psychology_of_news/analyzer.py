@@ -5,11 +5,16 @@ Main Analyzer class that orchestrates the full pipeline.
 import asyncio
 import os
 import sys
+import warnings
 import pandas as pd
 import numpy as np
 import nltk
 from pathlib import Path
 from datetime import datetime
+
+# Suppress noisy warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
+warnings.filterwarnings("ignore", category=UserWarning, module="litellm")
 
 # Fix for Jupyter/Colab nested event loops
 try:

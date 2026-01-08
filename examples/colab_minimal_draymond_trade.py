@@ -1,17 +1,15 @@
 # =============================================================================
 # CELL 1: Install (run once, then restart runtime)
 # =============================================================================
-# Run this cell, then: Runtime -> Restart runtime
-# After restart, skip this cell and run cells 2-4
-
-!pip uninstall -y psychology-of-news 2>/dev/null
-!pip install -q git+https://github.com/raymondli-me/psychology_of_news.git
-!pip install -q nest-asyncio
+!pip install -q git+https://github.com/raymondli-me/psychology_of_news.git nest-asyncio
 
 # =============================================================================
-# CELL 2: Load API Keys from Colab Secrets
+# CELL 2: Load API Keys + Suppress Warnings
 # =============================================================================
 import os
+import warnings
+warnings.filterwarnings("ignore")
+
 from google.colab import userdata
 
 os.environ["EVENT_REGISTRY_API_KEY"] = userdata.get("EVENT_REGISTRY_NEWS")
@@ -20,34 +18,29 @@ os.environ["ANTHROPIC_API_KEY"] = userdata.get("CLAUDE_API_KEY")
 os.environ["GOOGLE_API_KEY"] = userdata.get("GOOGLE_API_KEY")
 
 # =============================================================================
-# CELL 3: Run Analysis
+# CELL 3: Run Analysis (start with fewer sentences to test)
 # =============================================================================
 from psychology_of_news import Analyzer, Config
 
 config = Config(
-    # What to search for (Event Registry query)
     topic="Draymond Green trade",
     output_dir="/content/output",
 
-    # Sentence filtering
-    max_sentences=100,
-    min_sentence_length=30,
-    max_sentence_length=500,
+    # START SMALL to test - increase once working
+    max_sentences=20,  # Start with 20, increase to 100+ once confirmed working
 
-    # Keyword filter: which sentences to include
-    # - None: auto-extract from topic ("Draymond Green")
-    # - str: single keyword ("Draymond")
-    # - list: multiple keywords (["Draymond", "trade", "Warriors"])
-    keyword_filter=None,
-    keyword_logic="any",  # "any" (OR) or "all" (AND)
+    # Keyword filter
+    keyword_filter=None,  # Auto: "Draymond Green"
+    keyword_logic="any",
 
-    # Rating task (shown in visualization)
+    # Rating task
     rating_question="How likely does this imply Draymond Green will be traded?",
     scale_low="No trade implication",
     scale_mid="Neutral/ambiguous",
     scale_high="Trade very likely",
 )
 
+print("Starting analysis with 20 sentences (test run)...")
 results = Analyzer(config).run_all()
 
 # =============================================================================
