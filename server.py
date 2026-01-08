@@ -111,28 +111,45 @@ class DataManager:
             print("Embeddings ready.")
 
     def search(self, query: str, top_k: int = 15):
-        """Semantic search for RAG."""
+        """Hybrid semantic + keyword search for RAG."""
         if self.embeddings is None:
             return []
-            
+
+        # 1. Semantic search scores
         query_vec = self.embedding_model.encode([query])[0]
-        scores = np.dot(self.embeddings, query_vec) / (
-            np.linalg.norm(self.embeddings, axis=1) * np.linalg.norm(query_vec)
+        semantic_scores = np.dot(self.embeddings, query_vec) / (
+            np.linalg.norm(self.embeddings, axis=1) * np.linalg.norm(query_vec) + 1e-8
         )
-        top_indices = np.argsort(scores)[::-1][:top_k]
-        
+
+        # 2. Keyword matching boost
+        query_lower = query.lower()
+        keywords = [w for w in query_lower.split() if len(w) > 3]
+        keyword_scores = np.zeros(len(self.df))
+        for idx, row in self.df.iterrows():
+            text_lower = str(row.get("text", "")).lower()
+            matches = sum(1 for kw in keywords if kw in text_lower)
+            keyword_scores[idx] = matches / max(len(keywords), 1)
+
+        # 3. Combine: semantic + keyword boost
+        combined_scores = semantic_scores * 0.7 + keyword_scores * 0.3
+
+        # 4. Get top results
+        top_indices = np.argsort(combined_scores)[::-1][:top_k]
+
         results = []
         for idx in top_indices:
             row = self.df.iloc[idx]
             results.append({
                 "id": int(idx),
-                "text": row["text"],
-                "score": float(scores[idx]),
-                "mean_score": float(row.get("mean_score", 5)),
-                "cluster": int(row.get("cluster", -1)) if "cluster" in row else -1,
-                "gpt_score": int(row.get("GPT_score", 5)),
-                "claude_score": int(row.get("Claude_score", 5)),
-                "gemini_score": int(row.get("Gemini_score", 5)),
+                "text": row.get("text", row.get("sentence", "")),
+                "score": float(combined_scores[idx]),
+                "semantic_score": float(semantic_scores[idx]),
+                "keyword_score": float(keyword_scores[idx]),
+                "mean_score": float(row.get("mean", row.get("mean_score", 5))),
+                "cluster": int(row.get("cluster", -1)),
+                "gpt_score": int(row.get("gpt", row.get("GPT_score", 5))),
+                "claude_score": int(row.get("claude", row.get("Claude_score", 5))),
+                "gemini_score": int(row.get("gemini", row.get("Gemini_score", 5))),
             })
         return results
 
@@ -191,7 +208,24 @@ async def chat(request: QueryRequest):
         model=request.model
     )
 
-    return response
+    # 4. Build response with context for frontend citations
+    # Extract highlighted IDs from actions
+    highlighted_ids = []
+    for action in response.actions:
+        if action.type == "highlight_points" and isinstance(action.target, list):
+            highlighted_ids.extend(action.target)
+
+    # Fallback: if director didn't highlight anything, use all context IDs
+    if not highlighted_ids:
+        highlighted_ids = [item["id"] for item in context]
+
+    return {
+        "answer": response.answer,
+        "actions": [{"type": a.type, "target": a.target, "description": a.description} for a in response.actions],
+        "context": context,  # For citation lookups
+        "highlighted_ids": highlighted_ids,  # Direct list for easy rendering
+        "model_used": response.model_used
+    }
 
 if __name__ == "__main__":
     import uvicorn

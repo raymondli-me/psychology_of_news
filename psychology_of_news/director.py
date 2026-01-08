@@ -54,11 +54,12 @@ class DirectorAgent:
         Generate a response and stage directions based on the query and context.
         """
         
-        # Format context for prompt
+        # Format context for prompt - USE ACTUAL IDs so model can reference them
         context_str = ""
         for i, item in enumerate(context_sentences):
             cluster_name = topic_names.get(str(item['cluster']), f"Topic {item['cluster']}")
-            context_str += f"[{i}] Cluster: {cluster_name} | Score: {item.get('mean_score', 5):.1f} | Text: {item['text'][:200]}...\n"
+            actual_id = item.get('id', i)  # Use actual database ID
+            context_str += f"[ID:{actual_id}] Cluster: {cluster_name} | Score: {item.get('mean_score', 5):.1f} | Text: {item['text'][:200]}...\n"
 
         topics_str = "\n".join([f"ID {k}: {v}" for k, v in topic_names.items()])
         
@@ -75,9 +76,11 @@ YOUR JOB:
 1. Answer the user's question using the provided data context. Be concise and insightful.
 2. DIRECT the visualization to support your answer using specific actions.
 
+IMPORTANT: Each context sentence has an [ID:X] prefix. Use these EXACT IDs when highlighting points.
+
 AVAILABLE ACTIONS:
 - "focus_topic": target = topic_id (integer). Zooms camera to that cluster. Use when discussing a specific topic.
-- "highlight_points": target = [list of sentence_ids]. Highlights specific data points.
+- "highlight_points": target = [list of IDs from context]. ALWAYS include this action with the IDs of sentences you reference in your answer.
 - "filter_score": target = {{ "min": x, "max": y }}. Hides points outside this score range.
 - "reset": target = null. Resets view.
 
