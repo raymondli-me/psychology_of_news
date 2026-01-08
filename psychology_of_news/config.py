@@ -70,9 +70,9 @@ Reply with ONLY a single number (1-10), nothing else."""
 
     # Models - default triple-LLM setup
     models: list = field(default_factory=lambda: [
-        ModelConfig(name="GPT", model_id="openai/gpt-4o-mini"),
+        ModelConfig(name="GPT", model_id="openai/gpt-5-mini"),
         ModelConfig(name="Claude", model_id="anthropic/claude-sonnet-4-5"),
-        ModelConfig(name="Gemini", model_id="gemini/gemini-2.0-flash"),
+        ModelConfig(name="Gemini", model_id="gemini/gemini-2.5-flash"),
     ])
 
     # Sentence extraction
