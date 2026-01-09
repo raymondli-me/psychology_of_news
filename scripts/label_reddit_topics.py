@@ -5,10 +5,14 @@ import os
 import json
 import asyncio
 from pathlib import Path
+from litellm import acompletion
 
-from openai import AsyncOpenAI
-from anthropic import AsyncAnthropic
-import google.generativeai as genai
+# Model IDs for litellm
+MODELS = {
+    "gpt": "openai/gpt-5-nano",
+    "claude": "anthropic/claude-sonnet-4-5",
+    "gemini": "gemini/gemini-2.5-flash"
+}
 
 TOPIC_PROMPT = """Analyze these Reddit posts/comments from a cluster and provide a SHORT (2-4 word) topic label that captures what they're discussing.
 
@@ -18,56 +22,28 @@ Posts/Comments:
 Respond with ONLY the topic label, nothing else. Examples: "Trade Rumors", "Team Chemistry", "Kerr Criticism", "Fan Frustration", "Contract Talk", "Dynasty Debate"."""
 
 
-async def label_with_gpt(texts: list[str]) -> str:
-    """Generate topic label with GPT."""
-    client = AsyncOpenAI()
+async def get_topic_label(texts: list[str], model_key: str) -> str:
+    """Generate topic label using specified model via litellm."""
+    model_id = MODELS[model_key]
     sample = "\n".join(f"- {t[:200]}" for t in texts[:10])
 
     try:
-        response = await client.chat.completions.create(
-            model="gpt-5-nano",
+        # GPT-5 needs lots of tokens for reasoning before output
+        max_tok = 1000 if "gpt-5" in model_id else 100
+
+        response = await acompletion(
+            model=model_id,
             messages=[{"role": "user", "content": TOPIC_PROMPT.format(texts=sample)}],
-            temperature=0.3,
-            max_tokens=20
+            timeout=90,
+            max_tokens=max_tok
         )
-        return response.choices[0].message.content.strip().strip('"').strip("'")
+        content = response.choices[0].message.content
+        if content:
+            return content.strip().strip('"').strip("'")[:30]
+        else:
+            return "Unknown Topic"
     except Exception as e:
-        print(f"GPT error: {e}")
-        return "Unknown Topic"
-
-
-async def label_with_claude(texts: list[str]) -> str:
-    """Generate topic label with Claude."""
-    client = AsyncAnthropic()
-    sample = "\n".join(f"- {t[:200]}" for t in texts[:10])
-
-    try:
-        response = await client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=20,
-            messages=[{"role": "user", "content": TOPIC_PROMPT.format(texts=sample)}]
-        )
-        return response.content[0].text.strip().strip('"').strip("'")
-    except Exception as e:
-        print(f"Claude error: {e}")
-        return "Unknown Topic"
-
-
-async def label_with_gemini(texts: list[str]) -> str:
-    """Generate topic label with Gemini."""
-    genai.configure(api_key=os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"))
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    sample = "\n".join(f"- {t[:200]}" for t in texts[:10])
-
-    try:
-        response = await asyncio.to_thread(
-            model.generate_content,
-            TOPIC_PROMPT.format(texts=sample),
-            generation_config=genai.types.GenerationConfig(temperature=0.3, max_output_tokens=20)
-        )
-        return response.text.strip().strip('"').strip("'")
-    except Exception as e:
-        print(f"Gemini error: {e}")
+        print(f"{model_key.upper()} error: {e}")
         return "Unknown Topic"
 
 
@@ -100,19 +76,12 @@ async def main():
         print(f"\nCluster {cluster_id} ({len(texts)} items):")
 
         # Get labels from all 3 models in parallel
-        gpt_label, claude_label, gemini_label = await asyncio.gather(
-            label_with_gpt(texts),
-            label_with_claude(texts),
-            label_with_gemini(texts)
-        )
+        tasks = [get_topic_label(texts, model) for model in MODELS.keys()]
+        results = await asyncio.gather(*tasks)
 
-        topic_names["gpt"][str(cluster_id)] = gpt_label
-        topic_names["claude"][str(cluster_id)] = claude_label
-        topic_names["gemini"][str(cluster_id)] = gemini_label
-
-        print(f"  GPT:    {gpt_label}")
-        print(f"  Claude: {claude_label}")
-        print(f"  Gemini: {gemini_label}")
+        for model, label in zip(MODELS.keys(), results):
+            topic_names[model][str(cluster_id)] = label
+            print(f"  {model.upper()}: {label}")
 
         # Small delay to avoid rate limits
         await asyncio.sleep(0.5)

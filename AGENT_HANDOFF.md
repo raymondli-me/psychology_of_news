@@ -5,10 +5,12 @@ A Three.js-based interactive visualization comparing Draymond Green trade sentim
 
 **Rating Question**: "How likely does this imply Draymond Green will be traded?" (1-10 scale)
 
-**Models Used**:
-- GPT: `gpt-5-nano` (for rating/labeling)
-- Claude: `claude-sonnet-4-5`
-- Gemini: `gemini-2.5-flash`
+**Models Used** (via litellm):
+- GPT: `openai/gpt-5-nano` (reasoning model - needs max_tokens=1000)
+- Claude: `anthropic/claude-sonnet-4-5`
+- Gemini: `gemini/gemini-2.5-flash`
+
+**Note**: GPT-5-nano is a reasoning model. It uses tokens for internal "thinking" before output. With low max_tokens, all tokens go to reasoning, leaving nothing for visible output. Fix: set `max_tokens=1000`.
 
 ---
 
@@ -271,11 +273,12 @@ Three.js Visualization (browser)
 ## Future Improvements
 
 ### High Priority (Deficiencies)
-- [ ] Fix UMAP performance or find alternative (t-SNE? PACMAP?)
+- [x] Fix UMAP performance - FIXED! Works fine, first run is slow due to JIT compilation
 - [ ] Add real LLM rating instead of keyword-based mock scores
-- [ ] Migrate to `google.genai` package
+- [ ] Migrate to `google.genai` package (deprecation warning)
 
 ### Nice to Have
+- [ ] YouTube video transcripts (not just comments) - use YouTube Transcript API
 - [ ] Create comparison dashboard (side-by-side iframes)
 - [ ] Add time-series analysis if data has timestamps
 - [ ] Cross-source analysis (compare sentiments across News vs Reddit vs YouTube)

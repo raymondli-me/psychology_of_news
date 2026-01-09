@@ -5,93 +5,45 @@ import os
 import json
 import asyncio
 from pathlib import Path
-from openai import AsyncOpenAI
-from anthropic import AsyncAnthropic
-import google.generativeai as genai
+from litellm import acompletion
 
-# Load env
-from dotenv import load_dotenv
-load_dotenv(Path(__file__).parent.parent / ".env")
+# Model IDs for litellm
+MODELS = {
+    "gpt": "openai/gpt-5-nano",
+    "claude": "anthropic/claude-sonnet-4-5",
+    "gemini": "gemini/gemini-2.5-flash"
+}
 
-
-async def label_with_gpt(cluster_texts: dict[int, str]) -> dict[int, str]:
-    """Use GPT to label clusters."""
-    client = AsyncOpenAI()
-    labels = {}
-
-    for cluster_id, sample_text in cluster_texts.items():
-        prompt = f"""Based on these YouTube video/comment samples about Draymond Green trade discussions, give this cluster a short, descriptive label (2-4 words max).
+TOPIC_PROMPT = """Analyze these YouTube video/comment samples about Draymond Green trade discussions and provide a SHORT (2-4 word) topic label.
 
 Samples:
-{sample_text[:2000]}
+{texts}
 
-Respond with ONLY the label, nothing else."""
-
-        try:
-            response = await client.chat.completions.create(
-                model="gpt-5-nano",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=20
-            )
-            labels[cluster_id] = response.choices[0].message.content.strip().strip('"')
-        except Exception as e:
-            print(f"GPT error for cluster {cluster_id}: {e}")
-            labels[cluster_id] = f"Cluster {cluster_id}"
-
-    return labels
+Respond with ONLY the topic label, nothing else. Examples: "Trade Rumors", "Kerr Criticism", "Fan Reactions", "Dynasty Debate"."""
 
 
-async def label_with_claude(cluster_texts: dict[int, str]) -> dict[int, str]:
-    """Use Claude to label clusters."""
-    client = AsyncAnthropic()
-    labels = {}
+async def get_topic_label(texts: str, model_key: str) -> str:
+    """Generate topic label using specified model via litellm."""
+    model_id = MODELS[model_key]
 
-    for cluster_id, sample_text in cluster_texts.items():
-        prompt = f"""Based on these YouTube video/comment samples about Draymond Green trade discussions, give this cluster a short, descriptive label (2-4 words max).
+    try:
+        # GPT-5 needs lots of tokens for reasoning before output
+        max_tok = 1000 if "gpt-5" in model_id else 100
 
-Samples:
-{sample_text[:2000]}
-
-Respond with ONLY the label, nothing else."""
-
-        try:
-            response = await client.messages.create(
-                model="claude-sonnet-4-5",
-                max_tokens=20,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            labels[cluster_id] = response.content[0].text.strip().strip('"')
-        except Exception as e:
-            print(f"Claude error for cluster {cluster_id}: {e}")
-            labels[cluster_id] = f"Cluster {cluster_id}"
-
-    return labels
-
-
-async def label_with_gemini(cluster_texts: dict[int, str]) -> dict[int, str]:
-    """Use Gemini to label clusters."""
-    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    labels = {}
-
-    for cluster_id, sample_text in cluster_texts.items():
-        prompt = f"""Based on these YouTube video/comment samples about Draymond Green trade discussions, give this cluster a short, descriptive label (2-4 words max).
-
-Samples:
-{sample_text[:2000]}
-
-Respond with ONLY the label, nothing else."""
-
-        try:
-            response = await asyncio.to_thread(
-                model.generate_content, prompt
-            )
-            labels[cluster_id] = response.text.strip().strip('"')
-        except Exception as e:
-            print(f"Gemini error for cluster {cluster_id}: {e}")
-            labels[cluster_id] = f"Cluster {cluster_id}"
-
-    return labels
+        response = await acompletion(
+            model=model_id,
+            messages=[{"role": "user", "content": TOPIC_PROMPT.format(texts=texts[:2000])}],
+            timeout=90,
+            max_tokens=max_tok
+        )
+        content = response.choices[0].message.content
+        if content:
+            return content.strip().strip('"').strip("'")[:30]
+        else:
+            return f"Topic"
+    except Exception as e:
+        print(f"{model_key.upper()} error for cluster: {e}")
+        return f"Topic"
 
 
 async def main():
@@ -112,34 +64,35 @@ async def main():
     # Sample texts for each cluster
     sampled = {}
     for cluster_id, texts in cluster_texts.items():
-        sample = texts[:10]  # First 10 items
+        sample = texts[:10]
         sampled[cluster_id] = "\n---\n".join(sample)
 
-    print("Generating topic labels with 3 models...")
+    print(f"Generating topic labels for {len(sampled)} clusters with 3 models...")
 
-    # Run all labeling concurrently
-    gpt_labels, claude_labels, gemini_labels = await asyncio.gather(
-        label_with_gpt(sampled),
-        label_with_claude(sampled),
-        label_with_gemini(sampled)
-    )
+    # Generate labels for all clusters
+    topic_names = {"gpt": {}, "claude": {}, "gemini": {}}
 
-    # Combine into topic_names format
-    topic_names = {
-        "gpt": {str(k): v for k, v in gpt_labels.items()},
-        "claude": {str(k): v for k, v in claude_labels.items()},
-        "gemini": {str(k): v for k, v in gemini_labels.items()}
-    }
+    for cluster_id, sample_text in sampled.items():
+        print(f"\nCluster {cluster_id}:")
+
+        # Get labels from all 3 models in parallel
+        tasks = [get_topic_label(sample_text, model) for model in MODELS.keys()]
+        results = await asyncio.gather(*tasks)
+
+        for model, label in zip(MODELS.keys(), results):
+            topic_names[model][str(cluster_id)] = label
+            print(f"  {model.upper()}: {label}")
+
+        await asyncio.sleep(0.5)
 
     # Save
     with open(data_dir / "topic_names.json", "w") as f:
         json.dump(topic_names, f, indent=2)
 
-    print("\nTopic labels generated:")
-    for model in ["gpt", "claude", "gemini"]:
-        print(f"\n{model.upper()}:")
-        for cluster_id, name in topic_names[model].items():
-            print(f"  Cluster {cluster_id}: {name}")
+    print("\n" + "=" * 60)
+    print("Topic labels generated!")
+    print("=" * 60)
+    print(f"Saved to: {data_dir / 'topic_names.json'}")
 
 
 if __name__ == "__main__":

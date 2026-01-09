@@ -1,32 +1,32 @@
 {
   "gpt": {
-    "0": "Warriors Trade Controversy",
-    "7": "Draymond Green Trade Critique",
-    "4": "Media and Coaching Critique",
-    "3": "Trade Rumors & Opinions",
-    "1": "Trade Speculation",
-    "5": "Warriors Coaching Critique",
-    "2": "Draymond Green Trade Discourse",
-    "6": "Warriors Roster Critique"
+    "0": "Trade Rumors",
+    "7": "Topic",
+    "4": "Trade Discussion",
+    "3": "Topic",
+    "1": "Topic",
+    "5": "Draymond Trade Talk",
+    "2": "Topic",
+    "6": "Topic"
   },
   "claude": {
-    "0": "Warriors Drama Unfolding",
-    "7": "Draymond Drama Fatigue",
-    "4": "Media Trade Speculation",
-    "3": "Draymond Trade Speculation",
-    "1": "Trade Speculation Frenzy",
-    "5": "Kerr Criticism Cluster",
-    "2": "Draymond Trade Discourse",
-    "6": "Green Trade Frustrations"
+    "0": "Warriors Management Criticism",
+    "7": "Draymond Criticism",
+    "4": "Media Criticism",
+    "3": "Team Roster Debate",
+    "1": "Trade Proposals",
+    "5": "Kerr Criticism",
+    "2": "Draymond Trade Debate",
+    "6": "Topic"
   },
   "gemini": {
-    "0": "Warriors Turmoil",
-    "7": "Anti-Draymond Sentiment",
-    "4": "Analysis/Criticism",
-    "3": "Boogie Truthers",
-    "1": "Trade Scenarios & Targets",
-    "5": "Kerr Outdated System",
-    "2": "Draymond Debate",
-    "6": "Team Frustration/Critiques"
+    "0": "Warriors Roster",
+    "7": "Bontemps &",
+    "4": "Media Commentary Critique",
+    "3": "Trade",
+    "1": "Player Trade Ideas",
+    "5": "Kerr System Criticism",
+    "2": "Draymond Trade",
+    "6": "Team Performance"
   }
 }

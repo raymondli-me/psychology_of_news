@@ -1,32 +1,32 @@
 {
   "gpt": {
-    "7": "NBA Team Performance",
-    "0": "Player Expectations",
-    "5": "Player Disappointments",
-    "4": "Trade Rumors",
-    "2": "Draymond Green Controversy",
-    "6": "Kerr and Draymond Dynamics",
-    "1": "Draymond Green Criticism",
-    "3": "Referee Controversy"
+    "7": "Suns Rebuild Success",
+    "0": "Trade Rumors",
+    "5": "Disappointment List",
+    "4": "Anthony Davis Trade",
+    "2": "Draymond Controversy",
+    "6": "Kerr vs Draymond",
+    "1": "Draymond Drama",
+    "3": "Fan Frustration"
   },
   "claude": {
-    "7": "NBA Disappointments",
-    "0": "Basketball Banter",
+    "7": "NBA Disappointing Teams",
+    "0": "Trading Down Joke",
     "5": "Player Disappointments",
-    "4": "Trade Rumors",
-    "2": "Draymond Drama",
-    "6": "Draymond-Kerr Drama",
-    "1": "Draymond Drama",
-    "3": "Player Meltdown"
+    "4": "Anthony Davis Trade",
+    "2": "Draymond Green Behavior",
+    "6": "Kerr-Draymond Dynamic",
+    "1": "Draymond Green Problem",
+    "3": "Player Ejection"
   },
   "gemini": {
-    "7": "NBA Team Analysis",
-    "0": "Post Quality/Content",
+    "7": "Suns Performance Surprise",
+    "0": "Player Dis",
     "5": "Player Disappointments",
-    "4": "Mavs Trade Interest",
-    "2": "Draymond Green Antics",
-    "6": "Kerr & Draymond",
-    "1": "Draymond Green's Performance",
-    "3": "Player/Ref Criticism"
+    "4": "Anthony",
+    "2": "D",
+    "6": "K",
+    "1": "D",
+    "3": "Player Ejection"
   }
 }
