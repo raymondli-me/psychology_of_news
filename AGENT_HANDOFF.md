@@ -1,139 +1,296 @@
-# Agent Handoff Document - Psychology of News Visualization
+# Agent Handoff Document - Multi-Source Sentiment Visualization
 
 ## Project Overview
-A Three.js-based interactive visualization of 200 sentences about Draymond Green trade rumors, rated by 3 LLMs (GPT-5-nano, Claude Sonnet 4.5, Gemini 2.5 Flash) on a 1-10 scale for "how likely does this imply Draymond Green will be traded?"
+A Three.js-based interactive visualization comparing Draymond Green trade sentiments across **multiple sources**: News, Reddit, and YouTube (planned). Each source gets its own visualization with the same rating scale for direct comparison.
 
-## Key Features
-1. **3D Scatter Plot**: Points colored by selected model's score (blue=low, yellow=mid, red=high)
-2. **Topic Clustering**: UMAP-reduced embeddings with topic labels (percentile-ranked colors)
-3. **RAG Chat Sidebar**: "Data Director" agent that answers questions about the data
-4. **Citation System**: AI responses include clickable citations that highlight points on the visualization
+**Rating Question**: "How likely does this imply Draymond Green will be traded?" (1-10 scale)
 
-## Architecture
+**Models Used**:
+- GPT: `gpt-4o-mini` (for rating/labeling)
+- Claude: `claude-3-5-haiku-latest`
+- Gemini: `gemini-2.0-flash`
 
-### Frontend (`psychology_of_news/static/index.html`)
-- Three.js for 3D visualization
-- OrbitControls for camera navigation
-- Chat sidebar with model selection (Gemini/Claude/GPT)
-- Tooltip system (shared between canvas hover and chat citations)
+---
 
-### Backend
-- **`server.py`**: FastAPI server with endpoints:
-  - `GET /api/data` - Returns all points, cluster stats, topic names
-  - `POST /api/chat` - RAG chat endpoint (semantic search + director agent)
+## Current Status (Jan 8, 2026)
 
-- **`director.py`**: Pydantic AI agent that:
-  - Takes user query + semantic search context
-  - Generates natural language response with stage directions
-  - Returns actions: `focus_topic`, `highlight_points`, `reset`
+| Source | Status | Port | Items | URL |
+|--------|--------|------|-------|-----|
+| News | Working | 8000 | 200 | http://localhost:8000 |
+| Reddit | Working | 8001 | 866 | http://localhost:8001 |
+| YouTube | Planned | 8002 | - | - |
 
-### Data Pipeline
-- SQLite database with sentence embeddings
-- Sentence-transformers for embedding generation
-- Semantic search finds relevant sentences for RAG context
+---
 
-## Recent Bug Fixes (Jan 8, 2026)
+## Project Structure
 
-### 1. Citation Tooltip Not Appearing
-**Problem**: Canvas `mousemove` handler was racing with chat citation tooltip - hiding it immediately after showing.
-
-**Solution**: Added `window.chatTooltipActive` flag:
-- Set to `true` in `showCiteTooltip()`
-- Set to `false` in `hideCiteTooltip()`
-- Canvas mousemove handler returns early when flag is true
-
-**Location**: `index.html` lines 322-327, 573-574, 611-612
-
-### 2. Director Using Wrong IDs for Highlighting
-**Problem**: Director was referencing context by loop index [0], [1] instead of actual database IDs.
-
-**Solution**: Updated `director.py` to format context with actual IDs:
-```python
-actual_id = item.get('id', i)  # Use actual database ID
-context_str += f"[ID:{actual_id}] Cluster: {cluster_name} | ..."
-```
-
-**Location**: `director.py` - context formatting section
-
-### 3. Fallback Highlighting
-**Problem**: If director didn't specify IDs to highlight, nothing was highlighted.
-
-**Solution**: Added fallback in `server.py`:
-```python
-if not highlighted_ids:
-    highlighted_ids = [item["id"] for item in context]
-```
-
-## Key Code Sections
-
-### Tooltip CSS (`index.html:14`)
-```css
-#tooltip {
-    position: fixed;
-    z-index: 2000;
-    max-width: 420px;
-    /* ... */
-}
-```
-
-### showCiteTooltip Function (`index.html:540-605`)
-- Takes point index and DOM element
-- Builds HTML with scores for all 3 models
-- Positions tooltip to LEFT of chat sidebar
-- Sets `chatTooltipActive` flag
-
-### highlightPoints Function (`index.html:425-458`)
-- Takes array of point IDs
-- Enlarges and brightens matching points
-- Dims non-matching points
-- Adds white outline rings to highlighted points
-
-### Director Agent (`director.py`)
-- Uses Pydantic AI with structured output
-- Model: `gemini-2.5-flash` (or selected chat model)
-- Returns `DirectorResponse` with answer + actions
-
-## File Structure
 ```
 psychology_of_news/
-├── server.py                 # FastAPI backend
-├── psychology_of_news/
-│   ├── director.py           # Pydantic AI director agent
+├── .env                          # API keys (OpenAI, Anthropic, Google, Reddit, EventRegistry)
+├── server.py                     # News visualization server (port 8000)
+├── AGENT_HANDOFF.md              # This file
+├── MULTI_SOURCE_PLAN.md          # Detailed architecture planning doc
+│
+├── psychology_of_news/           # Original news package
+│   ├── director.py               # Pydantic AI director agent
 │   ├── static/
-│   │   └── index.html        # Main visualization UI
+│   │   └── index.html            # News visualization UI
+│   └── ...
+│
+├── reddit/                       # Reddit visualization (NEW)
+│   ├── server.py                 # FastAPI server (port 8001)
+│   ├── static/
+│   │   └── index.html            # Reddit-themed UI (orange badges, subreddit tags)
 │   └── data/
-│       └── draymond_embeddings.db  # SQLite with embeddings
-└── venv/                     # Python virtual environment
+│       ├── raw_reddit_real.json  # Raw collected data (866 items)
+│       ├── points_data.json      # Processed visualization data
+│       ├── topic_names.json      # Per-model topic labels
+│       └── cluster_stats.json    # Cluster centroids and stats
+│
+├── youtube/                      # YouTube visualization (PLANNED)
+│   ├── server.py
+│   ├── static/
+│   │   └── index.html
+│   └── data/
+│
+├── shared/                       # Shared components
+│   ├── __init__.py
+│   ├── embeddings.py             # Sentence-transformer wrapper (all-MiniLM-L6-v2)
+│   ├── clustering.py             # UMAP + DBSCAN (has issues, use PCA instead)
+│   ├── rating.py                 # Triple LLM rating
+│   ├── topics.py                 # LLM topic naming
+│   └── pipeline.py               # End-to-end processing (has UMAP issues)
+│
+├── collectors/                   # Data collection scripts
+│   ├── __init__.py
+│   └── reddit.py                 # PRAW-based Reddit collector
+│
+├── scripts/                      # Processing scripts
+│   ├── process_reddit.py         # Full pipeline (UMAP issues)
+│   ├── process_reddit_fast.py    # PCA-based processing (RECOMMENDED)
+│   ├── quick_reddit_test.py      # Mock data generator for testing
+│   ├── label_reddit_topics.py    # Generate per-model topic labels
+│   └── test_reddit_mock.py       # Old mock test (UMAP hangs)
+│
+└── test_output/                  # News data output
+    └── run_20260108_132100/
+        ├── points_data.json
+        ├── topic_names.json
+        └── cluster_stats.json
 ```
 
-## Running the Project
+---
+
+## Key Features
+
+### 1. 3D Scatter Plot (Three.js)
+- Points colored by selected model's score (blue=1, yellow=5, red=10)
+- OrbitControls for camera navigation
+- Click point to open source URL
+- Hover for detailed tooltip
+
+### 2. Per-Model Topic Labels
+Each model (GPT, Claude, Gemini) generates its own cluster labels. When switching models, labels change:
+- GPT: More neutral ("Draymond Green Controversy")
+- Claude: More dramatic ("Draymond Drama", "Player Meltdown")
+- Gemini: More specific ("Mavs Trade Interest")
+
+### 3. RAG Chat Sidebar
+- Semantic search + keyword boost for context retrieval
+- Director agent generates responses with citations
+- Citation cards show relevant posts with scores
+- Hover citation to see full tooltip, click to fly to point
+
+### 4. Source-Specific UI
+- **News**: Standard gold theme, "Click to open article"
+- **Reddit**: Orange subreddit badges (r/nba, r/warriors), POST/COMMENT type labels, upvote scores
+
+---
+
+## Reddit Implementation Details
+
+### Data Collection (`collectors/reddit.py`)
+```python
+from collectors.reddit import collect_reddit
+
+data = collect_reddit(
+    query="draymond green trade",
+    subreddits=["nba", "warriors", "nbadiscussion"],
+    max_posts=30,
+    max_comments=15,
+    time_filter="month"
+)
+```
+
+**Credentials**: Set `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET` in `.env`
+
+**Output Fields**:
+- `text`: Post body or comment text
+- `subreddit`: Source subreddit
+- `type`: "post" or "comment"
+- `score`: Upvotes
+- `url`: Permalink
+- `post_title`: Parent post title
+
+### Processing (`scripts/process_reddit_fast.py`)
+Uses PCA instead of UMAP (UMAP hangs on this machine):
+1. Generate embeddings (sentence-transformers)
+2. PCA for 3D projection (fast, ~14% variance explained)
+3. KMeans clustering (8 clusters)
+4. Mock scores based on keywords (real LLM rating available but slow)
+
+### Topic Labeling (`scripts/label_reddit_topics.py`)
+Calls GPT, Claude, and Gemini to generate unique labels per cluster:
+```bash
+source venv/bin/activate
+set -a && source .env && set +a
+python scripts/label_reddit_topics.py
+```
+
+### Running Reddit Server
 ```bash
 cd /Users/raymondli701/2026_01_07_workspace/psychology_of_news
 source venv/bin/activate
-python server.py
-# Visit http://localhost:8000
+set -a && source .env && set +a
+python reddit/server.py
+# Visit http://localhost:8001
 ```
 
-## Model IDs Used
-- GPT: `gpt-5-nano`
-- Claude: `claude-sonnet-4-5`
-- Gemini: `gemini-2.5-flash`
+---
 
-## Known Working State
-- 3D visualization renders correctly
-- Model switching works (GPT/Claude/Gemini/Agreement)
-- Topic labels show with percentile-ranked colors
-- Chat sidebar opens/closes
-- RAG search returns relevant context
-- Director generates responses with citations
-- Citation cards appear below AI responses
-- **Citation tooltip now appears to left of sidebar on hover**
-- Point highlighting works when AI responds
-- Click citation to fly camera to that point
+## Known Issues & Quirks
 
-## Next Steps / Potential Improvements
-- Add more data points beyond 200
-- Improve director's citation accuracy
-- Add export/save functionality
-- Consider adding time-series analysis if data has timestamps
-- Add more sophisticated topic clustering
+### 1. UMAP Hangs on Small Datasets
+**Problem**: `shared/clustering.py` UMAP takes forever (>5 min) even on 39 items.
+**Workaround**: Use `process_reddit_fast.py` which uses PCA instead.
+**TODO**: Debug UMAP or switch to different implementation.
+
+### 2. Citation Tooltip Race Condition (FIXED)
+**Problem**: Canvas mousemove handler hides chat citation tooltips immediately.
+**Solution**: `window.chatTooltipActive` flag prevents canvas handler from hiding chat tooltips.
+
+### 3. Google GenAI Deprecation Warning
+```
+FutureWarning: All support for the `google.generativeai` package has ended.
+```
+**TODO**: Migrate to `google.genai` package.
+
+### 4. Mock Scores vs Real LLM Scores
+Reddit currently uses keyword-based mock scores for speed. To use real LLM ratings:
+- Set `rate=True` in `process_source()` call
+- Will call GPT, Claude, Gemini for each item (slow, ~3 items/sec)
+
+### 5. Port Conflicts
+- News: 8000
+- Reddit: 8001
+- YouTube (planned): 8002
+Kill existing processes: `pkill -f 'server.py'`
+
+---
+
+## API Keys Required (.env)
+
+```
+OPENAI_API_KEY=sk-proj-...
+ANTHROPIC_API_KEY=sk-ant-api03-...
+GOOGLE_API_KEY=AIzaSy...
+REDDIT_CLIENT_ID=qfA94D_...
+REDDIT_CLIENT_SECRET=hsEtrUgUdfc9...
+EVENT_REGISTRY_API_KEY=ca6db172-...
+```
+
+---
+
+## Running Both Visualizations
+
+```bash
+cd /Users/raymondli701/2026_01_07_workspace/psychology_of_news
+source venv/bin/activate
+set -a && source .env && set +a
+
+# Terminal 1: News (port 8000)
+python server.py
+
+# Terminal 2: Reddit (port 8001)
+python reddit/server.py
+```
+
+---
+
+## Data Flow
+
+```
+Raw Data (API/Collection)
+    ↓
+Embedding Generation (sentence-transformers all-MiniLM-L6-v2)
+    ↓
+Dimensionality Reduction (PCA 3D - faster than UMAP)
+    ↓
+Clustering (KMeans, 8 clusters)
+    ↓
+Topic Labeling (GPT, Claude, Gemini each generate labels)
+    ↓
+Score Rating (keyword-based mock or real LLM calls)
+    ↓
+JSON Output (points_data.json, topic_names.json, cluster_stats.json)
+    ↓
+FastAPI Server (serves data + RAG chat)
+    ↓
+Three.js Visualization (browser)
+```
+
+---
+
+## Next Steps
+
+### YouTube Integration
+1. Create `collectors/youtube.py` using YouTube Data API v3
+2. Search "draymond green trade" videos
+3. Collect video comments
+4. Process same as Reddit
+5. Create `youtube/server.py` and `youtube/static/index.html`
+
+### Improvements
+- [ ] Fix UMAP performance or permanently switch to PCA
+- [ ] Add real LLM rating (currently using keyword-based mock)
+- [ ] Create comparison dashboard (side-by-side iframes)
+- [ ] Add time-series if data has timestamps
+- [ ] Migrate to `google.genai` package
+
+---
+
+## Useful Commands
+
+```bash
+# Collect Reddit data
+REDDIT_CLIENT_ID=xxx REDDIT_CLIENT_SECRET=xxx python -c "
+from collectors.reddit import collect_reddit
+collect_reddit('draymond green trade', output_path='reddit/data/raw.json')
+"
+
+# Process Reddit data
+python scripts/process_reddit_fast.py
+
+# Generate topic labels
+python scripts/label_reddit_topics.py
+
+# Kill all servers
+pkill -f 'server.py'
+
+# Check what's running
+lsof -i:8000 -i:8001 -i:8002
+```
+
+---
+
+## File Checksums (for verification)
+
+```
+reddit/data/points_data.json: 866 items
+reddit/data/topic_names.json: 8 clusters × 3 models
+reddit/data/raw_reddit_real.json: 866 raw items
+```
+
+---
+
+*Last updated: Jan 8, 2026*

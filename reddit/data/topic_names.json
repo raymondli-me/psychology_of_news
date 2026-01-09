@@ -1,0 +1,32 @@
+{
+  "gpt": {
+    "7": "NBA Team Performance",
+    "0": "Player Expectations",
+    "5": "Player Disappointments",
+    "4": "Trade Rumors",
+    "2": "Draymond Green Controversy",
+    "6": "Kerr and Draymond Dynamics",
+    "1": "Draymond Green Criticism",
+    "3": "Referee Controversy"
+  },
+  "claude": {
+    "7": "NBA Disappointments",
+    "0": "Basketball Banter",
+    "5": "Player Disappointments",
+    "4": "Trade Rumors",
+    "2": "Draymond Drama",
+    "6": "Draymond-Kerr Drama",
+    "1": "Draymond Drama",
+    "3": "Player Meltdown"
+  },
+  "gemini": {
+    "7": "NBA Team Analysis",
+    "0": "Post Quality/Content",
+    "5": "Player Disappointments",
+    "4": "Mavs Trade Interest",
+    "2": "Draymond Green Antics",
+    "6": "Kerr & Draymond",
+    "1": "Draymond Green's Performance",
+    "3": "Player/Ref Criticism"
+  }
+}
