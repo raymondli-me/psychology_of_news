@@ -80,11 +80,7 @@ psychology_of_news/
 │
 ├── shared/                       # Shared components
 │   ├── __init__.py
-│   ├── embeddings.py             # Sentence-transformer wrapper (all-MiniLM-L6-v2)
-│   ├── clustering.py             # UMAP + DBSCAN (has issues, use PCA instead)
-│   ├── rating.py                 # Triple LLM rating
-│   ├── topics.py                 # LLM topic naming
-│   └── pipeline.py               # End-to-end processing (has UMAP issues)
+│   └── embeddings.py             # Sentence-transformer wrapper (all-MiniLM-L6-v2)
 │
 ├── collectors/                   # Data collection scripts
 │   ├── __init__.py
@@ -92,12 +88,10 @@ psychology_of_news/
 │   └── youtube.py                # YouTube Data API v3 collector
 │
 ├── scripts/                      # Processing scripts
-│   ├── process_reddit.py         # Full pipeline (UMAP issues)
-│   ├── process_reddit_fast.py    # PCA-based processing (RECOMMENDED)
+│   ├── process_reddit_fast.py    # PCA-based Reddit processing
 │   ├── process_youtube_fast.py   # PCA-based YouTube processing
 │   ├── label_reddit_topics.py    # Generate per-model topic labels for Reddit
-│   ├── label_youtube_topics.py   # Generate per-model topic labels for YouTube
-│   └── ...
+│   └── label_youtube_topics.py   # Generate per-model topic labels for YouTube
 │
 └── test_output/                  # News data output
     └── run_20260108_132100/
