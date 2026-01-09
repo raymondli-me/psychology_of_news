@@ -6,9 +6,9 @@ A Three.js-based interactive visualization comparing Draymond Green trade sentim
 **Rating Question**: "How likely does this imply Draymond Green will be traded?" (1-10 scale)
 
 **Models Used**:
-- GPT: `gpt-4o-mini` (for rating/labeling)
-- Claude: `claude-3-5-haiku-latest`
-- Gemini: `gemini-2.0-flash`
+- GPT: `gpt-5-nano` (for rating/labeling)
+- Claude: `claude-sonnet-4-5`
+- Gemini: `gemini-2.5-flash`
 
 ---
 

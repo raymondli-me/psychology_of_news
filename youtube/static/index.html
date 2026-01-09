@@ -69,15 +69,15 @@
         <div style="font-size: 12px; font-weight: 600; margin-bottom: 10px; color: #ff0000;">COLOR BY MODEL</div>
         <button class="model-btn active" data-model="gpt">
             <span class="gpt-color">GPT</span>
-            <span class="model-id">gpt-4o-mini</span>
+            <span class="model-id">gpt-5-nano</span>
         </button>
         <button class="model-btn" data-model="claude">
             <span class="claude-color">Claude</span>
-            <span class="model-id">claude-3-5-haiku</span>
+            <span class="model-id">claude-sonnet-4-5</span>
         </button>
         <button class="model-btn" data-model="gemini">
             <span class="gemini-color">Gemini</span>
-            <span class="model-id">gemini-2.0-flash</span>
+            <span class="model-id">gemini-2.5-flash</span>
         </button>
         <button class="model-btn" data-model="agreement"><span style="color: #a855f7;">Agreement</span></button>
         <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
@@ -128,9 +128,9 @@
             <h3>YOUTUBE EXPLORER</h3>
             <p>Ask questions about YouTube videos and comments on the Draymond trade.</p>
             <select id="chat-model-select">
-                <option value="gemini">Gemini 2.0 Flash</option>
-                <option value="claude">Claude 3.5 Haiku</option>
-                <option value="gpt">GPT-4o Mini</option>
+                <option value="gemini">Gemini 2.5 Flash</option>
+                <option value="claude">Claude Sonnet 4.5</option>
+                <option value="gpt">GPT-5 Nano</option>
             </select>
         </div>
         <div id="chat-history">
@@ -502,9 +502,9 @@
         }
 
         const modelIds = {
-            'gpt': 'gpt-4o-mini',
-            'claude': 'claude-3-5-haiku',
-            'gemini': 'gemini-2.0-flash'
+            'gpt': 'gpt-5-nano',
+            'claude': 'claude-sonnet-4-5',
+            'gemini': 'gemini-2.5-flash'
         };
 
         window.showCiteTooltip = function(idx, element) {
