@@ -17,7 +17,7 @@ Respond with ONLY the topic label, nothing else. Examples: "Trade Rumors", "Team
 async def name_cluster_gemini(texts: List[str], max_samples: int = 10) -> str:
     """Generate a topic name for a cluster using Gemini."""
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"))
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    model = genai.GenerativeModel("gemini-2.5-flash")
 
     # Sample texts if too many
     sample = texts[:max_samples] if len(texts) > max_samples else texts

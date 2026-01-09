@@ -25,7 +25,7 @@ async def label_with_gpt(texts: list[str]) -> str:
 
     try:
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-nano",
             messages=[{"role": "user", "content": TOPIC_PROMPT.format(texts=sample)}],
             temperature=0.3,
             max_tokens=20
@@ -43,7 +43,7 @@ async def label_with_claude(texts: list[str]) -> str:
 
     try:
         response = await client.messages.create(
-            model="claude-3-5-haiku-latest",
+            model="claude-sonnet-4-5",
             max_tokens=20,
             messages=[{"role": "user", "content": TOPIC_PROMPT.format(texts=sample)}]
         )
@@ -56,7 +56,7 @@ async def label_with_claude(texts: list[str]) -> str:
 async def label_with_gemini(texts: list[str]) -> str:
     """Generate topic label with Gemini."""
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"))
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    model = genai.GenerativeModel("gemini-2.5-flash")
     sample = "\n".join(f"- {t[:200]}" for t in texts[:10])
 
     try:

@@ -46,13 +46,13 @@ class TripleRater:
 
         # Configure Gemini
         genai.configure(api_key=os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"))
-        self.gemini = genai.GenerativeModel("gemini-2.0-flash")
+        self.gemini = genai.GenerativeModel("gemini-2.5-flash")
 
         # Model IDs for display
         self.model_ids = {
-            "gpt": "gpt-4o-mini",
-            "claude": "claude-3-5-haiku-latest",
-            "gemini": "gemini-2.0-flash"
+            "gpt": "gpt-5-nano",
+            "claude": "claude-sonnet-4-5",
+            "gemini": "gemini-2.5-flash"
         }
 
     async def rate_gpt(self, text: str) -> RatingResult:
