@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YouTube Sentiment: Draymond Green Trade</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0a0a0a; font-family: 'Segoe UI', sans-serif; }
+        #title { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 20px; font-weight: 600; z-index: 100; }
+        #controls { position: absolute; top: 60px; left: 20px; background: rgba(15, 15, 25, 0.95); padding: 18px; border-radius: 12px; color: white; z-index: 100; min-width: 200px; }
+        .model-btn { display: block; width: 100%; padding: 10px 12px; margin: 6px 0; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.05); color: white; cursor: pointer; text-align: left; }
+        .model-btn:hover { background: rgba(255,255,255,0.15); }
+        .model-btn.active { border-color: #ff0000; background: rgba(255, 0, 0, 0.2); }
+        .model-btn span:first-child { display: block; font-weight: 600; font-size: 14px; }
+        .model-id { display: block; font-size: 10px; opacity: 0.6; margin-top: 2px; font-family: monospace; }
+        #tooltip { position: fixed; background: rgba(15, 15, 30, 0.98); color: white; padding: 16px; border-radius: 10px; pointer-events: none; display: none; max-width: 420px; font-size: 12px; z-index: 2000; border: 1px solid rgba(255, 0, 0, 0.3); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        #stats-panel { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(15, 15, 25, 0.9); padding: 12px 20px; border-radius: 8px; color: white; font-size: 11px; z-index: 100; }
+        #color-legend { position: absolute; top: 60px; right: 20px; background: rgba(15, 15, 25, 0.95); padding: 14px 16px; border-radius: 10px; color: white; z-index: 100; min-width: 160px; border: 1px solid rgba(255, 0, 0, 0.2); transition: right 0.3s; }
+        #color-legend.chat-open { right: 370px; }
+        #color-legend .legend-title { font-size: 11px; font-weight: 600; color: #ff0000; margin-bottom: 10px; text-transform: uppercase; }
+        #color-legend .gradient-bar { height: 16px; border-radius: 4px; background: linear-gradient(to right, rgb(59, 130, 246), rgb(234, 179, 8), rgb(239, 68, 68)); margin-bottom: 6px; }
+        #color-legend .gradient-labels { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 10px; }
+        #color-legend .scale-labels { font-size: 9px; opacity: 0.8; line-height: 1.5; }
+        #color-legend .scale-labels div { display: flex; justify-content: space-between; gap: 10px; }
+        .gpt-color { color: #10a37f; }
+        .claude-color { color: #cc785c; }
+        .gemini-color { color: #4285f4; }
+
+        /* Rating Panel */
+        #rating-panel { position: absolute; bottom: 20px; left: 20px; background: rgba(15, 15, 25, 0.95); padding: 14px 18px; border-radius: 10px; color: white; font-size: 11px; z-index: 100; max-width: 280px; border: 1px solid rgba(255, 0, 0, 0.2); }
+        #rating-panel .title { font-size: 11px; font-weight: 600; color: #ff0000; margin-bottom: 8px; text-transform: uppercase; }
+        #rating-panel .question { font-size: 13px; margin-bottom: 10px; line-height: 1.4; }
+        #rating-panel .scale { font-family: monospace; font-size: 10px; background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 4px; border-left: 2px solid #ff0000; }
+
+        /* Chat Sidebar */
+        #chat-toggle { position: absolute; top: 20px; right: 20px; background: rgba(255, 0, 0, 0.9); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; z-index: 200; transition: right 0.3s; }
+        #chat-toggle.open { right: 370px; }
+        #chat-sidebar { position: absolute; top: 0; right: -350px; width: 350px; height: 100%; background: rgba(15, 15, 25, 0.98); border-left: 1px solid rgba(255, 0, 0, 0.3); z-index: 150; display: flex; flex-direction: column; transition: right 0.3s; }
+        #chat-sidebar.open { right: 0; }
+        #chat-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        #chat-header h3 { margin: 0 0 8px 0; color: #ff0000; font-size: 14px; }
+        #chat-header p { margin: 0; font-size: 11px; color: rgba(255,255,255,0.6); }
+        #chat-model-select { margin-top: 10px; width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px; border-radius: 6px; font-size: 12px; }
+        #chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .chat-msg { padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.6; max-width: 95%; }
+        .chat-msg.ai { background: rgba(255, 0, 0, 0.15); align-self: flex-start; border-left: 3px solid #ff0000; color: #fff; }
+        .chat-msg.user { background: rgba(59, 130, 246, 0.3); align-self: flex-end; color: #fff; border-right: 3px solid #3b82f6; }
+        .chat-msg.loading { opacity: 0.7; font-style: italic; background: rgba(255,255,255,0.1); }
+        .citation { background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; cursor: pointer; font-weight: 600; margin: 0 2px; transition: all 0.2s; }
+        .citation:hover { background: #ff0000; color: white; }
+        .cited-sentence { display: block; margin: 6px 0; padding: 10px 12px; background: rgba(0,0,0,0.3); border-radius: 6px; font-size: 11px; line-height: 1.5; border-left: 3px solid #666; cursor: pointer; transition: all 0.2s; }
+        .cited-sentence:hover { background: rgba(255,255,255,0.1); }
+        .cited-sentence .cite-num { background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-right: 8px; font-size: 10px; }
+        .cited-sentence .cite-score { float: right; font-weight: 600; font-size: 12px; }
+        .cited-sentence .model-id { display: block; text-align: right; font-size: 9px; opacity: 0.4; margin-top: 6px; font-family: monospace; }
+        #chat-input-area { padding: 16px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 8px; }
+        #chat-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 10px 12px; border-radius: 8px; font-size: 13px; }
+        #chat-input:focus { outline: none; border-color: #ff0000; }
+        #chat-send { background: #ff0000; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        #chat-send:hover { background: #cc0000; }
+
+        /* Loading state */
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 16px; z-index: 1000; }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading visualization data...</div>
+    <div id="title">YouTube Sentiment: Draymond Green Trade</div>
+
+    <div id="controls">
+        <div style="font-size: 12px; font-weight: 600; margin-bottom: 10px; color: #ff0000;">COLOR BY MODEL</div>
+        <button class="model-btn active" data-model="gpt">
+            <span class="gpt-color">GPT</span>
+            <span class="model-id">gpt-4o-mini</span>
+        </button>
+        <button class="model-btn" data-model="claude">
+            <span class="claude-color">Claude</span>
+            <span class="model-id">claude-3-5-haiku</span>
+        </button>
+        <button class="model-btn" data-model="gemini">
+            <span class="gemini-color">Gemini</span>
+            <span class="model-id">gemini-2.0-flash</span>
+        </button>
+        <button class="model-btn" data-model="agreement"><span style="color: #a855f7;">Agreement</span></button>
+        <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px;">
+                <input type="checkbox" id="show-labels" checked style="width: 18px; height: 18px;">
+                <span>Show Topic Labels</span>
+            </label>
+        </div>
+        <button id="reset-btn" style="margin-top: 12px; width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">Reset View</button>
+    </div>
+
+    <div id="tooltip"></div>
+    <div id="stats-panel"><strong>n=...</strong> | Hover to inspect | <strong style="color: #ff0000;">Click to open on YouTube</strong></div>
+
+    <div id="color-legend">
+        <div class="legend-title">Score Legend</div>
+        <div class="gradient-bar"></div>
+        <div class="gradient-labels">
+            <span>1</span>
+            <span>5</span>
+            <span>10</span>
+        </div>
+        <div class="scale-labels">
+            <div><span>1</span><span>No trade implication</span></div>
+            <div><span>5</span><span>Neutral/ambiguous</span></div>
+            <div><span>10</span><span>Trade very likely</span></div>
+        </div>
+        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 9px; opacity: 0.7; line-height: 1.4;">
+            <div><strong>Points:</strong> raw score</div>
+            <div><strong>Labels:</strong> percentile rank</div>
+        </div>
+    </div>
+
+    <div id="rating-panel">
+        <div class="title">Rating Task</div>
+        <div class="question">How likely does this imply Draymond Green will be traded?</div>
+        <div class="scale">
+            1 = No trade implication<br>
+            5 = Neutral/ambiguous<br>
+            10 = Trade very likely
+        </div>
+    </div>
+
+    <button id="chat-toggle">Chat with Data</button>
+
+    <div id="chat-sidebar">
+        <div id="chat-header">
+            <h3>YOUTUBE EXPLORER</h3>
+            <p>Ask questions about YouTube videos and comments on the Draymond trade.</p>
+            <select id="chat-model-select">
+                <option value="gemini">Gemini 2.0 Flash</option>
+                <option value="claude">Claude 3.5 Haiku</option>
+                <option value="gpt">GPT-4o Mini</option>
+            </select>
+        </div>
+        <div id="chat-history">
+            <div class="chat-msg ai">Hello! Ask me about YouTube discussions on Draymond Green. Try: "What are the top comments?" or "Show me trade prediction videos"</div>
+        </div>
+        <div id="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Ask about the data...">
+            <button id="chat-send">Ask</button>
+        </div>
+    </div>
+
+    <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // Global state
+        let pointsData = [];
+        let clusterStats = {};
+        let topicNames = {};
+        let currentModel = 'gpt';
+        let showLabels = true;
+        let pointMeshes = [];
+        let labelSprites = [];
+        let scene, camera, renderer, controls;
+        let dataCentroid = { x: 0, y: 0, z: 0 };
+        const modelNames = ['gpt', 'claude', 'gemini'];
+        let highlightedIds = new Set();
+
+        async function loadData() {
+            try {
+                const res = await fetch('/api/data');
+                const data = await res.json();
+                pointsData = data.points;
+                clusterStats = data.cluster_stats || {};
+                topicNames = data.topic_names || {};
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('stats-panel').innerHTML = `<strong>n=${pointsData.length}</strong> YouTube videos/comments | Hover to inspect | <strong style="color: #ff0000;">Click to open on YouTube</strong>`;
+                initScene();
+            } catch (e) {
+                document.getElementById('loading').textContent = 'Error loading data. Is the server running?';
+                console.error(e);
+            }
+        }
+
+        function getColorForScore(score, model) {
+            if (model === 'agreement') {
+                const t = Math.min(score / 4, 1);
+                return new THREE.Color(`rgb(${Math.floor(t * 239 + (1-t) * 34)}, ${Math.floor((1-t) * 197 + t * 68)}, ${Math.floor((1-t) * 94 + t * 68)})`);
+            }
+            const t = (score - 1) / 9;
+            let r, g, b;
+            if (t < 0.5) { r = Math.floor(59 + t*2*175); g = Math.floor(130 + t*2*67); b = Math.floor(246 - t*2*152); }
+            else { r = Math.floor(234 + (t-0.5)*2*5); g = Math.floor(179 - (t-0.5)*2*111); b = Math.floor(8 + (t-0.5)*2*60); }
+            return new THREE.Color(`rgb(${r}, ${g}, ${b})`);
+        }
+
+        function getScoreForModel(point, model) {
+            if (model === 'agreement') {
+                const scores = modelNames.map(m => point[m] || 5);
+                const mean = scores.reduce((a,b) => a+b) / scores.length;
+                return Math.sqrt(scores.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / scores.length);
+            }
+            return point[model] || point.mean || 5;
+        }
+
+        function initScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+
+            let cx = 0, cy = 0, cz = 0;
+            pointsData.forEach(p => { cx += p.x; cy += p.y; cz += p.z; });
+            dataCentroid = { x: cx / pointsData.length, y: cy / pointsData.length, z: cz / pointsData.length };
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(dataCentroid.x, dataCentroid.y, dataCentroid.z + 12);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.target.set(dataCentroid.x, dataCentroid.y, dataCentroid.z);
+            controls.enableDamping = true;
+            controls.update();
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+            const pointGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+
+            pointsData.forEach((p, idx) => {
+                const score = getScoreForModel(p, currentModel);
+                const color = getColorForScore(score, currentModel);
+                const material = new THREE.MeshPhongMaterial({ color, emissive: color, emissiveIntensity: 0.4 });
+                const mesh = new THREE.Mesh(pointGeometry, material);
+                mesh.position.set(p.x, p.y, p.z);
+                mesh.userData = { ...p, index: idx, defaultColor: color.clone() };
+                scene.add(mesh);
+                pointMeshes.push(mesh);
+            });
+
+            createLabels();
+            setupInteraction();
+            animate();
+        }
+
+        function createLabels() {
+            labelSprites.forEach(s => scene.remove(s));
+            labelSprites.length = 0;
+
+            const clusterScores = [];
+            for (const [clusterId, stats] of Object.entries(clusterStats)) {
+                if (parseInt(clusterId) === -1 || stats.count < 3) continue;
+                const score = stats[currentModel + '_mean'] || 5;
+                clusterScores.push({ clusterId, score });
+            }
+
+            clusterScores.sort((a, b) => a.score - b.score);
+            const percentileMap = {};
+            clusterScores.forEach((item, idx) => {
+                percentileMap[item.clusterId] = 1 + (idx / Math.max(1, clusterScores.length - 1)) * 9;
+            });
+
+            for (const [clusterId, stats] of Object.entries(clusterStats)) {
+                if (parseInt(clusterId) === -1 || stats.count < 3) continue;
+                const name = topicNames[currentModel]?.[clusterId] || `Cluster ${clusterId}`;
+                const percentileScore = percentileMap[clusterId] || 5;
+
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.font = 'bold 48px Arial';
+                const textWidth = ctx.measureText(name).width;
+                canvas.width = textWidth + 40;
+                canvas.height = 70;
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.roundRect(0, 0, canvas.width, canvas.height, 8);
+                ctx.fill();
+
+                const color = getColorForScore(percentileScore, currentModel);
+                ctx.strokeStyle = `rgb(${Math.floor(color.r*255)}, ${Math.floor(color.g*255)}, ${Math.floor(color.b*255)})`;
+                ctx.lineWidth = 4;
+                ctx.roundRect(0, 0, canvas.width, canvas.height, 8);
+                ctx.stroke();
+
+                ctx.font = 'bold 48px Arial';
+                ctx.fillStyle = ctx.strokeStyle;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(name, canvas.width/2, canvas.height/2);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+                const sprite = new THREE.Sprite(material);
+                sprite.scale.set(canvas.width / 150, canvas.height / 150, 1);
+                sprite.position.set(stats.centroid.x, stats.centroid.y + 0.5, stats.centroid.z);
+                sprite.visible = showLabels;
+                sprite.userData = { clusterId: parseInt(clusterId) };
+                scene.add(sprite);
+                labelSprites.push(sprite);
+            }
+        }
+
+        function updateColors(model) {
+            currentModel = model;
+            pointMeshes.forEach((mesh, idx) => {
+                const score = getScoreForModel(pointsData[idx], model);
+                const color = getColorForScore(score, model);
+                mesh.material.color = color;
+                mesh.material.emissive = color;
+                mesh.userData.defaultColor = color.clone();
+            });
+            createLabels();
+            document.querySelectorAll('.model-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.model === model));
+        }
+
+        function setupInteraction() {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            const tooltip = document.getElementById('tooltip');
+            let hoveredMesh = null;
+
+            window.chatTooltipActive = false;
+
+            window.addEventListener('mousemove', (event) => {
+                if (window.chatTooltipActive) return;
+
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(pointMeshes);
+
+                if (intersects.length > 0) {
+                    const mesh = intersects[0].object;
+                    const idx = mesh.userData.index;
+
+                    if (hoveredMesh && hoveredMesh !== mesh) {
+                        const prevIdx = hoveredMesh.userData.index;
+                        if (highlightedIds.size > 0) {
+                            hoveredMesh.scale.set(highlightedIds.has(prevIdx) ? 2 : 0.7, highlightedIds.has(prevIdx) ? 2 : 0.7, highlightedIds.has(prevIdx) ? 2 : 0.7);
+                        } else {
+                            hoveredMesh.scale.set(1, 1, 1);
+                        }
+                    }
+
+                    mesh.scale.set(2.5, 2.5, 2.5);
+                    hoveredMesh = mesh;
+
+                    const d = mesh.userData;
+                    const isHighlighted = highlightedIds.has(idx);
+                    const highlightBadge = isHighlighted ? '<div style="background:#ff0000;color:white;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:600;margin-bottom:8px;display:inline-block;">AI HIGHLIGHTED</div>' : '';
+                    const scoresHtml = modelNames.map(m => `<div style="flex:1;text-align:center;padding:8px;background:rgba(255,255,255,0.05);border-radius:6px;"><div style="font-size:10px;opacity:0.8;">${m.toUpperCase()}</div><div style="font-size:20px;font-weight:bold;">${d[m] || '?'}</div></div>`).join('');
+
+                    // YouTube-specific badges
+                    const channelBadge = d.channel_name ? `<span style="background:#ff0000;color:white;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;margin-right:8px;">${d.channel_name.substring(0, 25)}</span>` : '';
+                    const typeBadge = d.type === 'video' ? '<span style="background:#3b82f6;color:white;padding:2px 6px;border-radius:4px;font-size:9px;margin-right:4px;">VIDEO</span>' : '<span style="background:#666;color:white;padding:2px 6px;border-radius:4px;font-size:9px;margin-right:4px;">COMMENT</span>';
+                    const likesBadge = d.like_count ? `<span style="opacity:0.6;font-size:10px;">${d.like_count} likes</span>` : '';
+
+                    tooltip.innerHTML = `${highlightBadge}<div style="margin-bottom:8px;">${channelBadge}${typeBadge}${likesBadge}</div>${d.video_title ? `<div style="font-size:10px;opacity:0.7;margin-bottom:8px;">Video: ${d.video_title.substring(0, 60)}...</div>` : ''}<div style="padding:10px;background:rgba(255,255,255,0.05);border-radius:6px;margin-bottom:12px;border-left:3px solid ${isHighlighted ? '#ff0000' : '#ff0000'};">${d.sentence || d.text}</div><div style="display:flex;gap:10px;">${scoresHtml}</div>${d.url ? '<div style="margin-top:6px;color:#ff0000;font-size:10px;text-align:center;">Click to open on YouTube</div>' : ''}`;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (event.clientX + 20) + 'px';
+                    tooltip.style.top = (event.clientY + 20) + 'px';
+                } else {
+                    if (hoveredMesh) {
+                        const prevIdx = hoveredMesh.userData.index;
+                        if (highlightedIds.size > 0) {
+                            hoveredMesh.scale.set(highlightedIds.has(prevIdx) ? 2 : 0.7, highlightedIds.has(prevIdx) ? 2 : 0.7, highlightedIds.has(prevIdx) ? 2 : 0.7);
+                        } else {
+                            hoveredMesh.scale.set(1, 1, 1);
+                        }
+                        hoveredMesh = null;
+                    }
+                    tooltip.style.display = 'none';
+                }
+            });
+
+            window.addEventListener('click', (event) => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(pointMeshes);
+                if (intersects.length > 0 && intersects[0].object.userData.url) {
+                    window.open(intersects[0].object.userData.url, '_blank');
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Director Commands
+        window.focusTopic = function(clusterId) {
+            const stats = clusterStats[clusterId];
+            if (stats && stats.centroid) {
+                const target = new THREE.Vector3(stats.centroid.x, stats.centroid.y, stats.centroid.z);
+                const endPos = new THREE.Vector3(stats.centroid.x, stats.centroid.y, stats.centroid.z + 5);
+                const startPos = camera.position.clone();
+                const startTarget = controls.target.clone();
+                let t = 0;
+                function animateCamera() {
+                    t += 0.03;
+                    if (t < 1) {
+                        camera.position.lerpVectors(startPos, endPos, t);
+                        controls.target.lerpVectors(startTarget, target, t);
+                        requestAnimationFrame(animateCamera);
+                    }
+                }
+                animateCamera();
+            }
+        };
+
+        let outlineMeshes = [];
+
+        window.highlightPoints = function(ids) {
+            outlineMeshes.forEach(m => scene.remove(m));
+            outlineMeshes = [];
+            highlightedIds = new Set(ids);
+
+            pointMeshes.forEach((mesh, idx) => {
+                const isHighlighted = highlightedIds.has(idx) || highlightedIds.has(mesh.userData.id);
+                if (isHighlighted) {
+                    highlightedIds.add(idx);
+                    mesh.material.emissiveIntensity = 0.6;
+                    mesh.scale.set(1.2, 1.2, 1.2);
+                    mesh.material.transparent = false;
+                    mesh.material.opacity = 1.0;
+
+                    const outlineGeo = new THREE.RingGeometry(0.18, 0.22, 32);
+                    const outlineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+                    const outline = new THREE.Mesh(outlineGeo, outlineMat);
+                    outline.position.copy(mesh.position);
+                    outline.lookAt(camera.position);
+                    scene.add(outline);
+                    outlineMeshes.push(outline);
+                } else {
+                    mesh.material.emissiveIntensity = 0.05;
+                    mesh.scale.set(0.5, 0.5, 0.5);
+                    mesh.material.opacity = 0.15;
+                    mesh.material.transparent = true;
+                }
+            });
+        };
+
+        window.flyToPoint = function(idx) {
+            const mesh = pointMeshes[idx];
+            if (!mesh) return;
+            const pos = mesh.position;
+            const target = new THREE.Vector3(pos.x, pos.y, pos.z);
+            const endPos = new THREE.Vector3(pos.x, pos.y, pos.z + 3);
+            const startPos = camera.position.clone();
+            const startTarget = controls.target.clone();
+            let t = 0;
+            function animateCamera() {
+                t += 0.04;
+                if (t < 1) {
+                    camera.position.lerpVectors(startPos, endPos, t);
+                    controls.target.lerpVectors(startTarget, target, t);
+                    requestAnimationFrame(animateCamera);
+                }
+            }
+            animateCamera();
+        };
+
+        window.pulsePoint = function(idx, active) {
+            const mesh = pointMeshes[idx];
+            if (!mesh) return;
+            if (active) {
+                mesh.scale.set(3, 3, 3);
+                mesh.material.emissiveIntensity = 1.0;
+            } else {
+                if (highlightedIds.has(idx)) {
+                    mesh.scale.set(1.2, 1.2, 1.2);
+                    mesh.material.emissiveIntensity = 0.6;
+                } else if (highlightedIds.size > 0) {
+                    mesh.scale.set(0.5, 0.5, 0.5);
+                    mesh.material.emissiveIntensity = 0.05;
+                } else {
+                    mesh.scale.set(1, 1, 1);
+                    mesh.material.emissiveIntensity = 0.4;
+                }
+            }
+        };
+
+        function getScoreColor(score) {
+            const t = (score - 1) / 9;
+            let r, g, b;
+            if (t < 0.5) {
+                r = Math.floor(59 + t*2*175);
+                g = Math.floor(130 + t*2*67);
+                b = Math.floor(246 - t*2*152);
+            } else {
+                r = Math.floor(234 + (t-0.5)*2*5);
+                g = Math.floor(179 - (t-0.5)*2*111);
+                b = Math.floor(8 + (t-0.5)*2*60);
+            }
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        const modelIds = {
+            'gpt': 'gpt-4o-mini',
+            'claude': 'claude-3-5-haiku',
+            'gemini': 'gemini-2.0-flash'
+        };
+
+        window.showCiteTooltip = function(idx, element) {
+            const point = pointsData[idx];
+            if (!point) return;
+            const tooltip = document.getElementById('tooltip');
+
+            const scoresHtml = modelNames.map(m => {
+                const score = point[m] || 5;
+                const color = getScoreColor(score);
+                return `<div style="flex:1;text-align:center;padding:8px;background:rgba(255,255,255,0.05);border-radius:6px;">
+                    <div style="font-size:10px;opacity:0.8;">${m.toUpperCase()}</div>
+                    <div style="font-size:20px;font-weight:bold;color:${color}">${score}</div>
+                </div>`;
+            }).join('');
+
+            tooltip.innerHTML = `
+                <div style="padding:10px;background:rgba(255,255,255,0.05);border-radius:6px;margin-bottom:12px;border-left:3px solid #ff0000;">${point.sentence || point.text}</div>
+                <div style="display:flex;gap:10px;">${scoresHtml}</div>
+                <div style="font-size:10px;opacity:0.6;margin-top:6px;">Channel: ${point.channel_name || 'Unknown'}</div>
+            `;
+
+            tooltip.style.display = 'block';
+            tooltip.style.visibility = 'visible';
+            tooltip.style.opacity = '1';
+            window.chatTooltipActive = true;
+
+            const rect = element.getBoundingClientRect();
+            const tooltipWidth = 420;
+            const leftPosition = rect.left - tooltipWidth - 20;
+
+            if (leftPosition < 20) {
+                tooltip.style.left = '20px';
+            } else {
+                tooltip.style.left = leftPosition + 'px';
+            }
+            tooltip.style.right = 'auto';
+            tooltip.style.top = Math.max(20, Math.min(rect.top, window.innerHeight - 350)) + 'px';
+        };
+
+        window.hideCiteTooltip = function() {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.display = 'none';
+            tooltip.style.right = 'auto';
+            window.chatTooltipActive = false;
+        };
+
+        window.resetView = function() {
+            highlightedIds.clear();
+            outlineMeshes.forEach(m => scene.remove(m));
+            outlineMeshes = [];
+
+            pointMeshes.forEach((mesh, idx) => {
+                const color = mesh.userData.defaultColor;
+                mesh.material.color.copy(color);
+                mesh.material.emissive.copy(color);
+                mesh.material.emissiveIntensity = 0.4;
+                mesh.scale.set(1, 1, 1);
+                mesh.material.opacity = 1.0;
+                mesh.material.transparent = false;
+            });
+
+            const target = new THREE.Vector3(dataCentroid.x, dataCentroid.y, dataCentroid.z);
+            const endPos = new THREE.Vector3(dataCentroid.x, dataCentroid.y, dataCentroid.z + 12);
+            const startPos = camera.position.clone();
+            const startTarget = controls.target.clone();
+            let t = 0;
+            function animateCamera() {
+                t += 0.03;
+                if (t < 1) {
+                    camera.position.lerpVectors(startPos, endPos, t);
+                    controls.target.lerpVectors(startTarget, target, t);
+                    requestAnimationFrame(animateCamera);
+                }
+            }
+            animateCamera();
+        };
+
+        // UI Event Listeners
+        document.querySelectorAll('.model-btn').forEach(btn => {
+            btn.addEventListener('click', () => updateColors(btn.dataset.model));
+        });
+
+        document.getElementById('show-labels').addEventListener('change', (e) => {
+            showLabels = e.target.checked;
+            labelSprites.forEach(s => s.visible = showLabels);
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', () => window.resetView());
+
+        // Chat Sidebar
+        const chatToggle = document.getElementById('chat-toggle');
+        const chatSidebar = document.getElementById('chat-sidebar');
+        const colorLegend = document.getElementById('color-legend');
+
+        chatToggle.addEventListener('click', () => {
+            chatSidebar.classList.toggle('open');
+            chatToggle.classList.toggle('open');
+            colorLegend.classList.toggle('chat-open');
+            chatToggle.textContent = chatSidebar.classList.contains('open') ? 'Close Chat' : 'Chat with Data';
+        });
+
+        const chatInput = document.getElementById('chat-input');
+        const chatSend = document.getElementById('chat-send');
+        const chatHistory = document.getElementById('chat-history');
+        const chatModelSelect = document.getElementById('chat-model-select');
+
+        let lastContext = [];
+
+        async function sendChat() {
+            const query = chatInput.value.trim();
+            if (!query) return;
+
+            const userMsg = document.createElement('div');
+            userMsg.className = 'chat-msg user';
+            userMsg.textContent = query;
+            chatHistory.appendChild(userMsg);
+            chatInput.value = '';
+
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'chat-msg ai loading';
+            loadingMsg.textContent = 'Thinking...';
+            chatHistory.appendChild(loadingMsg);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, model: chatModelSelect.value })
+                });
+                const data = await res.json();
+
+                lastContext = data.context || [];
+                loadingMsg.remove();
+
+                const aiMsg = document.createElement('div');
+                aiMsg.className = 'chat-msg ai';
+
+                let answerHtml = data.answer.replace(/\[(\d+)\]/g, (match, num) => {
+                    const idx = parseInt(num);
+                    return `<span class="citation" data-idx="${idx}" data-context-idx="${idx}">[${idx}]</span>`;
+                });
+
+                aiMsg.innerHTML = `<div class="answer-text">${answerHtml}</div>`;
+
+                if (data.highlighted_ids && data.highlighted_ids.length > 0) {
+                    const citesDiv = document.createElement('div');
+                    citesDiv.className = 'cited-sentences';
+                    citesDiv.style.marginTop = '12px';
+                    citesDiv.style.borderTop = '1px solid rgba(255,255,255,0.1)';
+                    citesDiv.style.paddingTop = '10px';
+
+                    data.highlighted_ids.slice(0, 10).forEach((pointIdx, i) => {
+                        const point = pointsData[pointIdx];
+                        if (point) {
+                            const cite = document.createElement('div');
+                            cite.className = 'cited-sentence';
+                            cite.dataset.pointIdx = pointIdx;
+
+                            const score = point[currentModel] || point.mean || 5;
+                            const borderColor = getScoreColor(score);
+                            cite.style.borderLeftColor = borderColor;
+
+                            const preview = (point.sentence || point.text || '').length > 250
+                                ? (point.sentence || point.text).substring(0, 250) + '...'
+                                : (point.sentence || point.text);
+
+                            const modelId = modelIds[currentModel] || currentModel;
+                            cite.innerHTML = `<span class="cite-num">${i}</span><span class="cite-score" style="color:${borderColor}">${score}</span>${preview}<span class="model-id">${modelId}</span>`;
+
+                            cite.addEventListener('mouseenter', function() {
+                                window.pulsePoint(pointIdx, true);
+                                window.showCiteTooltip(pointIdx, this);
+                            });
+                            cite.addEventListener('mouseleave', () => {
+                                window.pulsePoint(pointIdx, false);
+                                window.hideCiteTooltip();
+                            });
+                            cite.addEventListener('click', () => window.flyToPoint(pointIdx));
+                            citesDiv.appendChild(cite);
+                        }
+                    });
+
+                    aiMsg.appendChild(citesDiv);
+                }
+
+                chatHistory.appendChild(aiMsg);
+
+                aiMsg.querySelectorAll('.citation').forEach(cite => {
+                    const contextIdx = parseInt(cite.dataset.contextIdx);
+                    const ctx = lastContext[contextIdx];
+                    if (ctx) {
+                        cite.addEventListener('mouseenter', function() {
+                            window.pulsePoint(ctx.id, true);
+                            window.showCiteTooltip(ctx.id, this);
+                        });
+                        cite.addEventListener('mouseleave', () => {
+                            window.pulsePoint(ctx.id, false);
+                            window.hideCiteTooltip();
+                        });
+                        cite.addEventListener('click', () => window.flyToPoint(ctx.id));
+                    }
+                });
+
+                if (data.actions) {
+                    data.actions.forEach(action => {
+                        if (action.type === 'highlight_points') window.highlightPoints(action.target);
+                        if (action.type === 'reset') window.resetView();
+                    });
+                }
+            } catch (e) {
+                loadingMsg.textContent = 'Error connecting to server.';
+                loadingMsg.classList.remove('loading');
+                console.error(e);
+            }
+
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        chatSend.addEventListener('click', sendChat);
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChat(); });
+
+        loadData();
+    </script>
+</body>
+</html>

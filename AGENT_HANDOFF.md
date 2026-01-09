@@ -1,7 +1,7 @@
 # Agent Handoff Document - Multi-Source Sentiment Visualization
 
 ## Project Overview
-A Three.js-based interactive visualization comparing Draymond Green trade sentiments across **multiple sources**: News, Reddit, and YouTube (planned). Each source gets its own visualization with the same rating scale for direct comparison.
+A Three.js-based interactive visualization comparing Draymond Green trade sentiments across **multiple sources**: News, Reddit, and YouTube. Each source gets its own visualization with the same rating scale for direct comparison.
 
 **Rating Question**: "How likely does this imply Draymond Green will be traded?" (1-10 scale)
 
@@ -18,7 +18,28 @@ A Three.js-based interactive visualization comparing Draymond Green trade sentim
 |--------|--------|------|-------|-----|
 | News | Working | 8000 | 200 | http://localhost:8000 |
 | Reddit | Working | 8001 | 866 | http://localhost:8001 |
-| YouTube | Planned | 8002 | - | - |
+| YouTube | Working | 8002 | 836 | http://localhost:8002 |
+
+---
+
+## Known Deficiencies (To Fix Eventually)
+
+### 1. UMAP Not Working
+- **Problem**: `shared/clustering.py` UMAP hangs (>5 min) even on small datasets
+- **Current Workaround**: Using PCA instead (~15% variance explained)
+- **Impact**: PCA produces less meaningful clusters than UMAP would
+- **TODO**: Debug UMAP or try different implementation (umap-learn version issue?)
+
+### 2. Mock Scores Instead of Real LLM Ratings
+- **Problem**: Reddit and YouTube use keyword-based mock scores, not real LLM ratings
+- **Current Workaround**: Scores based on keyword matching ("trade him" = +2, "keep him" = -2, etc.)
+- **Impact**: Scores don't reflect actual LLM judgment
+- **TODO**: Enable real rating by calling GPT/Claude/Gemini for each item (slow, ~3 items/sec)
+- **How to enable**: Set `rate=True` in processing scripts, but expect ~5+ minutes for 800 items
+
+### 3. Google GenAI Package Deprecated
+- **Problem**: `google.generativeai` package shows deprecation warning
+- **TODO**: Migrate to `google.genai` package
 
 ---
 
@@ -26,7 +47,7 @@ A Three.js-based interactive visualization comparing Draymond Green trade sentim
 
 ```
 psychology_of_news/
-├── .env                          # API keys (OpenAI, Anthropic, Google, Reddit, EventRegistry)
+├── .env                          # API keys (OpenAI, Anthropic, Google, Reddit, YouTube)
 ├── server.py                     # News visualization server (port 8000)
 ├── AGENT_HANDOFF.md              # This file
 ├── MULTI_SOURCE_PLAN.md          # Detailed architecture planning doc
@@ -37,7 +58,7 @@ psychology_of_news/
 │   │   └── index.html            # News visualization UI
 │   └── ...
 │
-├── reddit/                       # Reddit visualization (NEW)
+├── reddit/                       # Reddit visualization
 │   ├── server.py                 # FastAPI server (port 8001)
 │   ├── static/
 │   │   └── index.html            # Reddit-themed UI (orange badges, subreddit tags)
@@ -47,11 +68,15 @@ psychology_of_news/
 │       ├── topic_names.json      # Per-model topic labels
 │       └── cluster_stats.json    # Cluster centroids and stats
 │
-├── youtube/                      # YouTube visualization (PLANNED)
-│   ├── server.py
+├── youtube/                      # YouTube visualization
+│   ├── server.py                 # FastAPI server (port 8002)
 │   ├── static/
-│   │   └── index.html
+│   │   └── index.html            # YouTube-themed UI (red badges, channel names)
 │   └── data/
+│       ├── raw_youtube.json      # Raw collected data (836 items)
+│       ├── points_data.json      # Processed visualization data
+│       ├── topic_names.json      # Per-model topic labels
+│       └── cluster_stats.json    # Cluster centroids and stats
 │
 ├── shared/                       # Shared components
 │   ├── __init__.py
@@ -63,14 +88,16 @@ psychology_of_news/
 │
 ├── collectors/                   # Data collection scripts
 │   ├── __init__.py
-│   └── reddit.py                 # PRAW-based Reddit collector
+│   ├── reddit.py                 # PRAW-based Reddit collector
+│   └── youtube.py                # YouTube Data API v3 collector
 │
 ├── scripts/                      # Processing scripts
 │   ├── process_reddit.py         # Full pipeline (UMAP issues)
 │   ├── process_reddit_fast.py    # PCA-based processing (RECOMMENDED)
-│   ├── quick_reddit_test.py      # Mock data generator for testing
-│   ├── label_reddit_topics.py    # Generate per-model topic labels
-│   └── test_reddit_mock.py       # Old mock test (UMAP hangs)
+│   ├── process_youtube_fast.py   # PCA-based YouTube processing
+│   ├── label_reddit_topics.py    # Generate per-model topic labels for Reddit
+│   ├── label_youtube_topics.py   # Generate per-model topic labels for YouTube
+│   └── ...
 │
 └── test_output/                  # News data output
     └── run_20260108_132100/
@@ -91,9 +118,9 @@ psychology_of_news/
 
 ### 2. Per-Model Topic Labels
 Each model (GPT, Claude, Gemini) generates its own cluster labels. When switching models, labels change:
-- GPT: More neutral ("Draymond Green Controversy")
-- Claude: More dramatic ("Draymond Drama", "Player Meltdown")
-- Gemini: More specific ("Mavs Trade Interest")
+- GPT: More neutral ("Draymond Green Controversy", "Trade Speculation")
+- Claude: More dramatic ("Draymond Drama Fatigue", "Warriors Drama Unfolding")
+- Gemini: More specific ("Anti-Draymond Sentiment", "Kerr Outdated System")
 
 ### 3. RAG Chat Sidebar
 - Semantic search + keyword boost for context retrieval
@@ -102,8 +129,55 @@ Each model (GPT, Claude, Gemini) generates its own cluster labels. When switchin
 - Hover citation to see full tooltip, click to fly to point
 
 ### 4. Source-Specific UI
-- **News**: Standard gold theme, "Click to open article"
-- **Reddit**: Orange subreddit badges (r/nba, r/warriors), POST/COMMENT type labels, upvote scores
+- **News**: Gold theme, "Click to open article"
+- **Reddit**: Orange theme, subreddit badges (r/nba, r/warriors), POST/COMMENT type labels, upvote scores
+- **YouTube**: Red theme, channel name badges, VIDEO/COMMENT type labels, like counts
+
+---
+
+## YouTube Implementation Details
+
+### Data Collection (`collectors/youtube.py`)
+```python
+from collectors.youtube import collect_youtube
+
+data = collect_youtube(
+    query="draymond green trade",
+    max_videos=30,
+    max_comments=50,
+    output_path="youtube/data/raw_youtube.json"
+)
+```
+
+**Credentials**: Set `YOUTUBE_API_KEY` in `.env`
+
+**Output Fields**:
+- `text`: Video title+description or comment text
+- `video_id`: YouTube video ID
+- `video_title`: Parent video title
+- `channel_name`: Video uploader or commenter
+- `type`: "video" or "comment"
+- `like_count`: Likes on comment
+- `url`: Direct YouTube link
+
+### Processing (`scripts/process_youtube_fast.py`)
+Same as Reddit - uses PCA instead of UMAP:
+1. Generate embeddings (sentence-transformers)
+2. PCA for 3D projection
+3. KMeans clustering (8 clusters)
+4. Mock scores based on keywords
+
+### Topic Labeling (`scripts/label_youtube_topics.py`)
+Calls GPT, Claude, and Gemini to generate unique labels per cluster.
+
+### Running YouTube Server
+```bash
+cd /Users/raymondli701/2026_01_07_workspace/psychology_of_news
+source venv/bin/activate
+set -a && source .env && set +a
+python youtube/server.py
+# Visit http://localhost:8002
+```
 
 ---
 
@@ -124,67 +198,15 @@ data = collect_reddit(
 
 **Credentials**: Set `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET` in `.env`
 
-**Output Fields**:
-- `text`: Post body or comment text
-- `subreddit`: Source subreddit
-- `type`: "post" or "comment"
-- `score`: Upvotes
-- `url`: Permalink
-- `post_title`: Parent post title
-
 ### Processing (`scripts/process_reddit_fast.py`)
-Uses PCA instead of UMAP (UMAP hangs on this machine):
+Uses PCA instead of UMAP:
 1. Generate embeddings (sentence-transformers)
-2. PCA for 3D projection (fast, ~14% variance explained)
+2. PCA for 3D projection (~14% variance explained)
 3. KMeans clustering (8 clusters)
-4. Mock scores based on keywords (real LLM rating available but slow)
+4. Mock scores based on keywords
 
 ### Topic Labeling (`scripts/label_reddit_topics.py`)
-Calls GPT, Claude, and Gemini to generate unique labels per cluster:
-```bash
-source venv/bin/activate
-set -a && source .env && set +a
-python scripts/label_reddit_topics.py
-```
-
-### Running Reddit Server
-```bash
-cd /Users/raymondli701/2026_01_07_workspace/psychology_of_news
-source venv/bin/activate
-set -a && source .env && set +a
-python reddit/server.py
-# Visit http://localhost:8001
-```
-
----
-
-## Known Issues & Quirks
-
-### 1. UMAP Hangs on Small Datasets
-**Problem**: `shared/clustering.py` UMAP takes forever (>5 min) even on 39 items.
-**Workaround**: Use `process_reddit_fast.py` which uses PCA instead.
-**TODO**: Debug UMAP or switch to different implementation.
-
-### 2. Citation Tooltip Race Condition (FIXED)
-**Problem**: Canvas mousemove handler hides chat citation tooltips immediately.
-**Solution**: `window.chatTooltipActive` flag prevents canvas handler from hiding chat tooltips.
-
-### 3. Google GenAI Deprecation Warning
-```
-FutureWarning: All support for the `google.generativeai` package has ended.
-```
-**TODO**: Migrate to `google.genai` package.
-
-### 4. Mock Scores vs Real LLM Scores
-Reddit currently uses keyword-based mock scores for speed. To use real LLM ratings:
-- Set `rate=True` in `process_source()` call
-- Will call GPT, Claude, Gemini for each item (slow, ~3 items/sec)
-
-### 5. Port Conflicts
-- News: 8000
-- Reddit: 8001
-- YouTube (planned): 8002
-Kill existing processes: `pkill -f 'server.py'`
+Calls GPT, Claude, and Gemini to generate unique labels per cluster.
 
 ---
 
@@ -196,12 +218,13 @@ ANTHROPIC_API_KEY=sk-ant-api03-...
 GOOGLE_API_KEY=AIzaSy...
 REDDIT_CLIENT_ID=qfA94D_...
 REDDIT_CLIENT_SECRET=hsEtrUgUdfc9...
+YOUTUBE_API_KEY=AIzaSyBd...
 EVENT_REGISTRY_API_KEY=ca6db172-...
 ```
 
 ---
 
-## Running Both Visualizations
+## Running All Three Visualizations
 
 ```bash
 cd /Users/raymondli701/2026_01_07_workspace/psychology_of_news
@@ -213,6 +236,16 @@ python server.py
 
 # Terminal 2: Reddit (port 8001)
 python reddit/server.py
+
+# Terminal 3: YouTube (port 8002)
+python youtube/server.py
+```
+
+Or run all in background:
+```bash
+python server.py &
+python reddit/server.py &
+python youtube/server.py &
 ```
 
 ---
@@ -224,13 +257,13 @@ Raw Data (API/Collection)
     ↓
 Embedding Generation (sentence-transformers all-MiniLM-L6-v2)
     ↓
-Dimensionality Reduction (PCA 3D - faster than UMAP)
+Dimensionality Reduction (PCA 3D - faster than UMAP but less accurate)
     ↓
 Clustering (KMeans, 8 clusters)
     ↓
 Topic Labeling (GPT, Claude, Gemini each generate labels)
     ↓
-Score Rating (keyword-based mock or real LLM calls)
+Score Rating (keyword-based mock - TODO: real LLM calls)
     ↓
 JSON Output (points_data.json, topic_names.json, cluster_stats.json)
     ↓
@@ -241,37 +274,35 @@ Three.js Visualization (browser)
 
 ---
 
-## Next Steps
+## Future Improvements
 
-### YouTube Integration
-1. Create `collectors/youtube.py` using YouTube Data API v3
-2. Search "draymond green trade" videos
-3. Collect video comments
-4. Process same as Reddit
-5. Create `youtube/server.py` and `youtube/static/index.html`
-
-### Improvements
-- [ ] Fix UMAP performance or permanently switch to PCA
-- [ ] Add real LLM rating (currently using keyword-based mock)
-- [ ] Create comparison dashboard (side-by-side iframes)
-- [ ] Add time-series if data has timestamps
+### High Priority (Deficiencies)
+- [ ] Fix UMAP performance or find alternative (t-SNE? PACMAP?)
+- [ ] Add real LLM rating instead of keyword-based mock scores
 - [ ] Migrate to `google.genai` package
+
+### Nice to Have
+- [ ] Create comparison dashboard (side-by-side iframes)
+- [ ] Add time-series analysis if data has timestamps
+- [ ] Cross-source analysis (compare sentiments across News vs Reddit vs YouTube)
 
 ---
 
 ## Useful Commands
 
 ```bash
-# Collect Reddit data
-REDDIT_CLIENT_ID=xxx REDDIT_CLIENT_SECRET=xxx python -c "
-from collectors.reddit import collect_reddit
-collect_reddit('draymond green trade', output_path='reddit/data/raw.json')
-"
+# Collect new YouTube data
+python -c "from collectors.youtube import collect_youtube; collect_youtube('draymond green trade', output_path='youtube/data/raw_youtube.json')"
 
-# Process Reddit data
+# Process YouTube data
+python scripts/process_youtube_fast.py
+
+# Generate YouTube topic labels
+python scripts/label_youtube_topics.py
+
+# Same for Reddit
+python -c "from collectors.reddit import collect_reddit; collect_reddit('draymond green trade', output_path='reddit/data/raw_reddit_real.json')"
 python scripts/process_reddit_fast.py
-
-# Generate topic labels
 python scripts/label_reddit_topics.py
 
 # Kill all servers
@@ -289,6 +320,10 @@ lsof -i:8000 -i:8001 -i:8002
 reddit/data/points_data.json: 866 items
 reddit/data/topic_names.json: 8 clusters × 3 models
 reddit/data/raw_reddit_real.json: 866 raw items
+
+youtube/data/points_data.json: 836 items
+youtube/data/topic_names.json: 8 clusters × 3 models
+youtube/data/raw_youtube.json: 836 raw items
 ```
 
 ---
