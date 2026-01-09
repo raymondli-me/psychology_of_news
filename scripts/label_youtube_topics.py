@@ -9,7 +9,7 @@ from litellm import acompletion
 
 # Model IDs for litellm
 MODELS = {
-    "gpt": "openai/gpt-5-nano",
+    "gpt": "openai/gpt-5.1",
     "claude": "anthropic/claude-sonnet-4-5",
     "gemini": "gemini/gemini-2.5-flash"
 }
@@ -27,14 +27,15 @@ async def get_topic_label(texts: str, model_key: str) -> str:
     model_id = MODELS[model_key]
 
     try:
-        # GPT-5 needs lots of tokens for reasoning before output
-        max_tok = 1000 if "gpt-5" in model_id else 100
+        # GPT-5.1 with reasoning_effort="none" - no reasoning overhead
+        extra_params = {"reasoning_effort": "none"} if "gpt-5.1" in model_id else {}
 
         response = await acompletion(
             model=model_id,
             messages=[{"role": "user", "content": TOPIC_PROMPT.format(texts=texts[:2000])}],
             timeout=90,
-            max_tokens=max_tok
+            max_tokens=50,
+            **extra_params
         )
         content = response.choices[0].message.content
         if content:

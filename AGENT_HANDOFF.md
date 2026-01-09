@@ -16,11 +16,11 @@ A Three.js-based interactive visualization comparing Draymond Green trade sentim
 
 ## Current Status (Jan 8, 2026)
 
-| Source | Status | Port | Items | URL |
-|--------|--------|------|-------|-----|
-| News | Working | 8000 | 200 | http://localhost:8000 |
-| Reddit | Working | 8001 | 866 | http://localhost:8001 |
-| YouTube | Working | 8002 | 836 | http://localhost:8002 |
+| Source | Status | Port | Items | Real LLM Ratings | URL |
+|--------|--------|------|-------|------------------|-----|
+| News | Working | 8000 | 200 | Yes | http://localhost:8000 |
+| Reddit | Working | 8001 | 200 | Yes (GPT:5.0, Claude:2.1, Gemini:4.8) | http://localhost:8001 |
+| YouTube | Working | 8002 | 200 | Yes (GPT:5.0, Claude:2.2, Gemini:4.6) | http://localhost:8002 |
 
 ---
 
@@ -274,8 +274,9 @@ Three.js Visualization (browser)
 
 ### High Priority (Deficiencies)
 - [x] Fix UMAP performance - FIXED! Works fine, first run is slow due to JIT compilation
-- [ ] Add real LLM rating instead of keyword-based mock scores
+- [x] Add real LLM rating - DONE! Using gpt-5.1 (reasoning=none), claude-sonnet-4-5, gemini-2.5-flash
 - [ ] Migrate to `google.genai` package (deprecation warning)
+- [ ] Fix Gemini litellm MAX_TOKENS bug (many Gemini ratings fall back to 5)
 
 ### Nice to Have
 - [ ] YouTube video transcripts (not just comments) - use YouTube Transcript API

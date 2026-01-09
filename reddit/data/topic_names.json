@@ -1,32 +1,32 @@
 {
   "gpt": {
-    "7": "Suns Rebuild Success",
-    "0": "Trade Rumors",
-    "5": "Disappointment List",
-    "4": "Anthony Davis Trade",
-    "2": "Draymond Controversy",
-    "6": "Kerr vs Draymond",
-    "1": "Draymond Drama",
-    "3": "Fan Frustration"
+    "2": "Warriors Fan Frustration",
+    "1": "Draymond Green Criticism",
+    "4": "Warriors blockbuster trades",
+    "5": "Defense & Effort",
+    "7": "Humorous Reddit Banter",
+    "0": "Referee Decisions",
+    "6": "Warriors Trade Speculation",
+    "3": "Steve Kerr decisions"
   },
   "claude": {
-    "7": "NBA Disappointing Teams",
-    "0": "Trading Down Joke",
-    "5": "Player Disappointments",
-    "4": "Anthony Davis Trade",
-    "2": "Draymond Green Behavior",
-    "6": "Kerr-Draymond Dynamic",
-    "1": "Draymond Green Problem",
-    "3": "Player Ejection"
+    "2": "Player-Coach Tension",
+    "1": "Draymond Green Criticism",
+    "4": "Trade Proposals",
+    "5": "Offensive vs Defensive Priorit",
+    "7": "Danny Wolf Jokes",
+    "0": "Controversial Officiating Call",
+    "6": "Technical Fouls Discussion",
+    "3": "Kerr-Draymond Conflict"
   },
   "gemini": {
-    "7": "Suns Performance Surprise",
-    "0": "Player Dis",
-    "5": "Player Disappointments",
-    "4": "Anthony",
-    "2": "D",
-    "6": "K",
-    "1": "D",
-    "3": "Player Ejection"
+    "2": "Player",
+    "1": "Dray",
+    "4": "Unknown Topic",
+    "5": "Player Performance",
+    "7": "Jewish",
+    "0": "Off",
+    "6": "Unknown Topic",
+    "3": "Kerr"
   }
 }

@@ -1,32 +1,32 @@
 {
   "gpt": {
-    "0": "Trade Rumors",
-    "7": "Topic",
-    "4": "Trade Discussion",
-    "3": "Topic",
-    "1": "Topic",
-    "5": "Draymond Trade Talk",
-    "2": "Topic",
-    "6": "Topic"
+    "6": "Draymond-Kerr Fallout",
+    "7": "Random Fan Reactions",
+    "5": "Draymond Fan Reactions",
+    "2": "General NBA chatter",
+    "0": "Draymond Podcast Reactions",
+    "4": "Draymond Fan Reactions",
+    "3": "Trade Banter",
+    "1": "Draymond Trade Debate"
   },
   "claude": {
-    "0": "Warriors Management Criticism",
-    "7": "Draymond Criticism",
-    "4": "Media Criticism",
-    "3": "Team Roster Debate",
-    "1": "Trade Proposals",
-    "5": "Kerr Criticism",
-    "2": "Draymond Trade Debate",
-    "6": "Topic"
+    "6": "Draymond-Kerr Conflict",
+    "7": "Comment Reactions",
+    "5": "Draymond Commentary/Personalit",
+    "2": "Trade Rumors",
+    "0": "Podcast Commentary",
+    "4": "Draymond's Character Debate",
+    "3": "Trade Trash Talk",
+    "1": "Draymond Trade Talk"
   },
   "gemini": {
-    "0": "Warriors Roster",
-    "7": "Bontemps &",
-    "4": "Media Commentary Critique",
-    "3": "Trade",
-    "1": "Player Trade Ideas",
-    "5": "Kerr System Criticism",
-    "2": "Draymond Trade",
-    "6": "Team Performance"
+    "6": "Dray",
+    "7": "Dray",
+    "5": "D",
+    "2": "NBA Discussions",
+    "0": "Topic",
+    "4": "Dray",
+    "3": "Topic",
+    "1": "Trade"
   }
 }
